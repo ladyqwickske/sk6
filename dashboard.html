@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cCc SK6 - Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+  <script src="config.js"></script>
+  <script src="site-config.js"></script>
+  <script src="portal-shim.js"></script>
+  <style>
+    :root {
+      --primary: #ffb300;
+      --bg-dark: #232526;
+      --bg-card: rgba(30, 34, 40, 0.95);
+      --text: #f3f3f3;
+      --text-muted: #aaa;
+      --success: #4CAF50;
+      --danger: #e74c3c;
+      --border: #444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      color: var(--text);
+      min-height: 100vh;
+      background-attachment: fixed;
+      padding: 60px 8px 80px 8px;
+    }
+
+    /* Tab Navigation */
+    .tab-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: flex; justify-content: center; gap: 0;
+      background: #1a1d21; border-bottom: 2px solid var(--primary);
+      padding: 0;
+    }
+    .tab-nav a {
+      color: var(--text-muted); text-decoration: none;
+      padding: 12px 18px; font-size: 0.95em; font-weight: 500;
+      border-bottom: 3px solid transparent; transition: all 0.2s;
+    }
+    .tab-nav a:hover { color: var(--primary); }
+    .tab-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* Login Bar */
+    .login-bar {
+      position: fixed; top: 0; right: 8px; z-index: 1001;
+      display: flex; align-items: center; gap: 8px; padding: 8px;
+    }
+    .login-bar .user-email { font-size: 0.8em; color: var(--primary); }
+    .login-bar button {
+      background: var(--primary); color: #000; border: none; border-radius: 6px;
+      padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 0.85em;
+    }
+    .login-bar button:hover { background: #ffc107; }
+    .login-bar .logout-btn { background: #555; color: #fff; }
+
+    /* Container */
+    .container {
+      max-width: 1200px; margin: 0 auto;
+      background: var(--bg-card); border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+      padding: 24px 16px;
+    }
+
+    h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
+    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
+
+    /* Period Selector */
+    .period-selector {
+      display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .period-selector button {
+      background: #333; color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.9em;
+    }
+    .period-selector button.active { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
+
+    /* Stats Cards */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: #2a2d32; border-radius: 12px; padding: 16px; text-align: center;
+    }
+    .stat-card .stat-value { font-size: 1.8em; font-weight: 700; color: var(--primary); }
+    .stat-card .stat-label { font-size: 0.8em; color: var(--text-muted); margin-top: 4px; }
+
+    /* Period Info */
+    .period-info {
+      text-align: center; padding: 8px; background: #2a2d32; border-radius: 8px;
+      margin-bottom: 16px; font-size: 0.85em; color: var(--text-muted);
+    }
+    .period-info .period-name { color: var(--primary); font-weight: 600; }
+
+    /* Player Table */
+    .table-container { overflow-x: auto; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: 0.9em;
+    }
+    th {
+      background: #333; color: var(--primary); padding: 10px 8px;
+      text-align: left; position: sticky; top: 0; cursor: pointer;
+      border-bottom: 2px solid var(--primary);
+    }
+    th:hover { background: #444; }
+    td { padding: 8px; border-bottom: 1px solid #333; }
+    tr:hover { background: rgba(255, 179, 0, 0.05); }
+    .rank { font-weight: 700; color: var(--primary); width: 40px; }
+    .points { font-weight: 600; }
+    .points.above-target { color: var(--success); }
+    .points.below-target { color: var(--danger); }
+
+    /* Progress Bar */
+    .progress-bar {
+      width: 100%; height: 6px; background: #444; border-radius: 3px; overflow: hidden;
+    }
+    .progress-bar .fill {
+      height: 100%; background: var(--primary); border-radius: 3px;
+      transition: width 0.3s;
+    }
+    .progress-bar .fill.complete { background: var(--success); }
+
+    /* Chest Points Reference Popup */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #2a2d32; border-radius: 16px; padding: 24px;
+      max-width: 800px; width: 95%; max-height: 85vh; overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    .modal h2 { color: var(--primary); margin-bottom: 12px; }
+    .modal .close-btn {
+      float: right; background: none; border: none; color: var(--text);
+      font-size: 1.5em; cursor: pointer; padding: 0 8px;
+    }
+    .modal .close-btn:hover { color: var(--primary); }
+    .modal input[type="text"] {
+      width: 100%; padding: 10px; background: #1a1d21; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.9em; margin-bottom: 12px;
+    }
+    .chest-ref-table { font-size: 0.85em; }
+    .chest-ref-table th { background: #1a1d21; font-size: 0.85em; }
+    .chest-ref-table td { padding: 6px 8px; }
+
+    /* Chest Points Ref Button */
+    .ref-btn {
+      background: #333; color: var(--primary); border: 1px solid var(--primary);
+      border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.85em;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .ref-btn:hover { background: var(--primary); color: #000; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+    .spinner {
+      display: inline-block; width: 24px; height: 24px;
+      border: 3px solid var(--border); border-top-color: var(--primary);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; z-index: 3000;
+      background: #333; color: var(--text); padding: 12px 20px;
+      border-radius: 8px; font-size: 0.9em; display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body { padding: 50px 4px 70px 4px; }
+      .tab-nav a { padding: 10px 10px; font-size: 0.8em; }
+      .stat-card .stat-value { font-size: 1.4em; }
+      .container { padding: 16px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Tab Navigation -->
+<nav class="tab-nav" id="tabNav">
+  <a href="dashboard.html" class="active">📊 Dashboard</a>
+  <a href="events.html">⚔️ Events</a>
+  <a href="members.html">👥 Members</a>
+  <a href="calendar.html">📅 Calendar</a>
+</nav>
+
+<!-- Login Bar -->
+<div class="login-bar" id="loginBar">
+  <span class="user-email" id="userEmail" style="display:none"></span>
+  <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
+  <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
+</div>
+
+<div class="container">
+  <h1>⚔️ cCc SK6</h1>
+  <p class="subtitle">Seasonal Kingdom Clan Dashboard</p>
+
+  <!-- Period Selector -->
+  <div class="period-selector">
+    <button class="active" onclick="selectPeriod('active', this)">Active Period</button>
+    <button onclick="selectPeriod('previous', this)">Previous Period</button>
+    <button class="ref-btn" onclick="openChestPointsRef()">📋 Chest Points</button>
+  </div>
+
+  <!-- Period Info -->
+  <div class="period-info" id="periodInfo">
+    <span class="period-name" id="periodName">Loading...</span>
+    <span id="periodDates"></span>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-value" id="statChests">-</div><div class="stat-label">Chests</div></div>
+    <div class="stat-card"><div class="stat-value" id="statPoints">-</div><div class="stat-label">Total Points</div></div>
+    <div class="stat-card"><div class="stat-value" id="statPlayers">-</div><div class="stat-label">Players</div></div>
+    <div class="stat-card"><div class="stat-value" id="statTop">-</div><div class="stat-label">Top Player</div></div>
+  </div>
+
+  <!-- Player Rankings -->
+  <div class="loading" id="loadingDiv"><div class="spinner"></div><br>Loading data...</div>
+  <div class="table-container" id="tableContainer" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th onclick="sortTable('name')">Player</th>
+          <th onclick="sortTable('points')">Points ▼</th>
+          <th onclick="sortTable('chests')">Chests</th>
+          <th>Progress</th>
+        </tr>
+      </thead>
+      <tbody id="playerTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Chest Points Reference Modal -->
+<div class="modal-overlay" id="chestRefModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeChestPointsRef()">&times;</button>
+    <h2>📋 Chest Points Reference</h2>
+    <input type="text" id="chestRefSearch" placeholder="Search chests..." oninput="filterChestRef()">
+    <div class="table-container">
+      <table class="chest-ref-table">
+        <thead>
+          <tr><th>Type</th><th>Chest Name</th><th>Level</th><th>Points</th></tr>
+        </thead>
+        <tbody id="chestRefBody"></tbody>
+      </table>
+    </div>
+    <div class="loading" id="chestRefLoading" style="display:none"><div class="spinner"></div><br>Loading...</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ===========================
+  // STATE
+  // ===========================
+  let currentPeriod = 'active';
+  let playerData = [];
+  let chestRefData = [];
+  let sortField = 'points';
+  let sortAsc = false;
+  let isLoggedIn = false;
+  let currentUser = null;
+  let currentPeriodDates = null;
+  let targetPoints = 3000;
+
+  // ===========================
+  // INITIALIZATION
+  // ===========================
+  document.addEventListener('DOMContentLoaded', () => {
+    checkLoginState();
+    loadDashboard();
+  });
+
+  // ===========================
+  // AUTH
+  // ===========================
+  function checkLoginState() {
+    const stored = localStorage.getItem('sk6_auth');
+    if (stored) {
+      try {
+        const auth = JSON.parse(stored);
+        if (auth.email && auth.allowed) {
+          isLoggedIn = true;
+          currentUser = auth;
+          updateLoginUI();
+        }
+      } catch (e) {}
+    }
+  }
+
+  function handleLogin() {
+    // Load Google Identity Services
+    if (!document.getElementById('gsi-script')) {
+      const script = document.createElement('script');
+      script.id = 'gsi-script';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.onload = () => initGoogleLogin();
+      document.head.appendChild(script);
+    } else {
+      initGoogleLogin();
+    }
+  }
+
+  function initGoogleLogin() {
+    google.accounts.id.initialize({
+      client_id: SITE_CONFIG.googleClientId,
+      callback: handleGoogleCallback
+    });
+    google.accounts.id.prompt();
+  }
+
+  async function handleGoogleCallback(response) {
+    try {
+      const res = await fetch(window.GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: response.credential })
+      });
+      const data = await res.json();
+
+      if (data.success && data.email) {
+        // Now verify with backend
+        const verifyRes = await fetch(window.GAS_WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'api', fn: 'verifyGoogleLogin', args: [{ email: data.email }] })
+        });
+        const verifyData = await verifyRes.json();
+        const authResult = verifyData.data || verifyData;
+
+        if (authResult.success && authResult.allowed) {
+          isLoggedIn = true;
+          currentUser = { email: data.email, allowed: true };
+          localStorage.setItem('sk6_auth', JSON.stringify(currentUser));
+          updateLoginUI();
+          showToast('Logged in as ' + data.email, 'success');
+        } else {
+          showToast('Access denied for ' + data.email, 'error');
+        }
+      } else {
+        showToast('Login failed', 'error');
+      }
+    } catch (err) {
+      showToast('Login error: ' + err.message, 'error');
+    }
+  }
+
+  function handleLogout() {
+    isLoggedIn = false;
+    currentUser = null;
+    localStorage.removeItem('sk6_auth');
+    updateLoginUI();
+    showToast('Logged out', 'success');
+  }
+
+  function updateLoginUI() {
+    const emailEl = document.getElementById('userEmail');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (isLoggedIn && currentUser) {
+      emailEl.textContent = currentUser.email;
+      emailEl.style.display = 'inline';
+      loginBtn.style.display = 'none';
+      logoutBtn.style.display = 'inline';
+    } else {
+      emailEl.style.display = 'none';
+      loginBtn.style.display = 'inline';
+      logoutBtn.style.display = 'none';
+    }
+  }
+
+  // ===========================
+  // DASHBOARD LOADING
+  // ===========================
+  async function loadDashboard() {
+    try {
+      const periodPreset = currentPeriod === 'active' ? 'lastday' : 'prevweek';
+
+      // Load period dates and stats in parallel
+      const [periodResult, statsResult, playerResult] = await Promise.all([
+        callFunction(currentPeriod === 'active' ? 'getActivePeriodDates' : 'getPreviousPeriodDates'),
+        callFunction('getStatsSummary', []),
+        callFunction('getPlayerStats', [])
+      ]);
+
+      // Update period info
+      if (periodResult) {
+        currentPeriodDates = periodResult;
+        targetPoints = periodResult.targetPoints || 3000;
+        document.getElementById('periodName').textContent = periodResult.source || 'Current Period';
+        document.getElementById('periodDates').textContent =
+          ` (${periodResult.start || '?'} → ${periodResult.end || '?'})`;
+      }
+
+      // Update stats
+      if (statsResult) {
+        document.getElementById('statChests').textContent = (statsResult.totalChests || 0).toLocaleString();
+        document.getElementById('statPoints').textContent = (statsResult.totalPoints || 0).toLocaleString();
+        document.getElementById('statPlayers').textContent = statsResult.uniquePlayers || 0;
+        document.getElementById('statTop').textContent = statsResult.topPlayer || '-';
+      }
+
+      // Update player table
+      if (playerResult && Array.isArray(playerResult)) {
+        playerData = playerResult;
+        renderPlayerTable();
+      }
+
+      document.getElementById('loadingDiv').style.display = 'none';
+      document.getElementById('tableContainer').style.display = 'block';
+    } catch (error) {
+      console.error('Dashboard load error:', error);
+      document.getElementById('loadingDiv').innerHTML =
+        '<span style="color: var(--danger)">Failed to load data. Check your configuration.</span>';
+    }
+  }
+
+  function selectPeriod(period, btn) {
+    currentPeriod = period;
+    document.querySelectorAll('.period-selector button:not(.ref-btn)').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('loadingDiv').style.display = 'block';
+    document.getElementById('tableContainer').style.display = 'none';
+    loadDashboard();
+  }
+
+  // ===========================
+  // PLAYER TABLE
+  // ===========================
+  function renderPlayerTable() {
+    const tbody = document.getElementById('playerTableBody');
+    tbody.innerHTML = '';
+
+    const sorted = [...playerData].sort((a, b) => {
+      let va = a[sortField] || 0, vb = b[sortField] || 0;
+      if (sortField === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
+      else if (sortField === 'points') { va = a.totalPoints; vb = b.totalPoints; }
+      else if (sortField === 'chests') { va = a.chestCount; vb = b.chestCount; }
+      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+      return sortAsc ? va - vb : vb - va;
+    });
+
+    sorted.forEach((player, index) => {
+      const progress = Math.min(100, (player.totalPoints / targetPoints) * 100);
+      const isAbove = player.totalPoints >= targetPoints;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="rank">${index + 1}</td>
+        <td>${escapeHtml(player.name)}</td>
+        <td class="points ${isAbove ? 'above-target' : 'below-target'}">${player.totalPoints.toLocaleString()}</td>
+        <td>${player.chestCount}</td>
+        <td>
+          <div class="progress-bar">
+            <div class="fill ${isAbove ? 'complete' : ''}" style="width: ${progress}%"></div>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function sortTable(field) {
+    if (sortField === field) { sortAsc = !sortAsc; }
+    else { sortField = field; sortAsc = false; }
+    renderPlayerTable();
+  }
+
+  // ===========================
+  // CHEST POINTS REFERENCE
+  // ===========================
+  async function openChestPointsRef() {
+    document.getElementById('chestRefModal').classList.add('active');
+
+    if (chestRefData.length === 0) {
+      document.getElementById('chestRefLoading').style.display = 'block';
+      try {
+        const result = await callFunction('getChestPointsReference');
+        if (result && result.success) {
+          chestRefData = result.data;
+          renderChestRef(chestRefData);
+        }
+      } catch (err) {
+        console.error('Chest ref load error:', err);
+      }
+      document.getElementById('chestRefLoading').style.display = 'none';
+    }
+  }
+
+  function closeChestPointsRef() {
+    document.getElementById('chestRefModal').classList.remove('active');
+  }
+
+  function renderChestRef(data) {
+    const tbody = document.getElementById('chestRefBody');
+    tbody.innerHTML = '';
+    data.forEach(chest => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(chest.type)}</td>
+        <td>${escapeHtml(chest.name)}</td>
+        <td>${escapeHtml(chest.level)}</td>
+        <td style="font-weight:600; color: var(--primary)">${chest.points}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function filterChestRef() {
+    const query = document.getElementById('chestRefSearch').value.toLowerCase();
+    const filtered = chestRefData.filter(c =>
+      c.type.toLowerCase().includes(query) ||
+      c.name.toLowerCase().includes(query) ||
+      String(c.level).toLowerCase().includes(query)
+    );
+    renderChestRef(filtered);
+  }
+
+  // Close modal on overlay click
+  document.getElementById('chestRefModal').addEventListener('click', function(e) {
+    if (e.target === this) closeChestPointsRef();
+  });
+
+  // ===========================
+  // UTILITIES
+  // ===========================
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast ' + (type || '');
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>

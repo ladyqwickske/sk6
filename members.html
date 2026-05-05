@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cCc SK6 - Members</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👥</text></svg>">
+  <script src="config.js"></script>
+  <script src="site-config.js"></script>
+  <script src="portal-shim.js"></script>
+  <style>
+    :root {
+      --primary: #ffb300;
+      --bg-dark: #232526;
+      --bg-card: rgba(30, 34, 40, 0.95);
+      --text: #f3f3f3;
+      --text-muted: #aaa;
+      --success: #4CAF50;
+      --danger: #e74c3c;
+      --border: #444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      color: var(--text); min-height: 100vh;
+      background-attachment: fixed; padding: 60px 8px 80px 8px;
+    }
+    .tab-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: flex; justify-content: center; gap: 0;
+      background: #1a1d21; border-bottom: 2px solid var(--primary); padding: 0;
+    }
+    .tab-nav a {
+      color: var(--text-muted); text-decoration: none;
+      padding: 12px 18px; font-size: 0.95em; font-weight: 500;
+      border-bottom: 3px solid transparent; transition: all 0.2s;
+    }
+    .tab-nav a:hover { color: var(--primary); }
+    .tab-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .login-bar {
+      position: fixed; top: 0; right: 8px; z-index: 1001;
+      display: flex; align-items: center; gap: 8px; padding: 8px;
+    }
+    .login-bar .user-email { font-size: 0.8em; color: var(--primary); }
+    .login-bar button {
+      background: var(--primary); color: #000; border: none; border-radius: 6px;
+      padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 0.85em;
+    }
+    .login-bar button:hover { background: #ffc107; }
+    .login-bar .logout-btn { background: #555; color: #fff; }
+    .container {
+      max-width: 1200px; margin: 0 auto; background: var(--bg-card);
+      border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.25); padding: 24px 16px;
+    }
+    h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
+    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
+
+    /* Member Form (admin only) */
+    .admin-panel {
+      display: none; background: #2a2d32; border-radius: 12px;
+      padding: 16px; margin-bottom: 20px;
+    }
+    .admin-panel.visible { display: block; }
+    .admin-panel h3 { color: var(--primary); margin-bottom: 12px; font-size: 1em; }
+    .form-row {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+    }
+    .form-row input, .form-row select {
+      flex: 1; min-width: 120px; padding: 8px 12px;
+      background: #1a1d21; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 0.9em;
+    }
+    .btn {
+      background: var(--primary); color: #000; border: none; border-radius: 8px;
+      padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9em;
+    }
+    .btn:hover { background: #ffc107; }
+    .btn.danger { background: var(--danger); color: #fff; }
+    .btn.danger:hover { background: #c0392b; }
+    .btn.secondary { background: #555; color: #fff; }
+
+    /* Members Table */
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+    th {
+      background: #333; color: var(--primary); padding: 10px 8px;
+      text-align: left; border-bottom: 2px solid var(--primary); cursor: pointer;
+    }
+    th:hover { background: #444; }
+    td { padding: 8px; border-bottom: 1px solid #333; }
+    tr:hover { background: rgba(255, 179, 0, 0.05); }
+
+    .might-value { color: var(--primary); font-weight: 600; }
+    .growth-positive { color: var(--success); }
+    .growth-negative { color: var(--danger); }
+    .member-actions { display: flex; gap: 4px; }
+    .member-actions button {
+      background: #444; color: var(--text); border: none; border-radius: 4px;
+      padding: 4px 8px; cursor: pointer; font-size: 0.8em;
+    }
+    .member-actions button:hover { background: #555; }
+    .member-actions .remove-btn:hover { background: var(--danger); }
+
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+    .spinner {
+      display: inline-block; width: 24px; height: 24px;
+      border: 3px solid var(--border); border-top-color: var(--primary);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; z-index: 3000;
+      background: #333; color: var(--text); padding: 12px 20px;
+      border-radius: 8px; font-size: 0.9em; display: none;
+    }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+
+    .member-count { text-align: center; color: var(--text-muted); font-size: 0.85em; margin-bottom: 12px; }
+
+    @media (max-width: 600px) {
+      body { padding: 50px 4px 70px 4px; }
+      .tab-nav a { padding: 10px 10px; font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="tab-nav">
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="events.html">⚔️ Events</a>
+  <a href="members.html" class="active">👥 Members</a>
+  <a href="calendar.html">📅 Calendar</a>
+</nav>
+
+<div class="login-bar" id="loginBar">
+  <span class="user-email" id="userEmail" style="display:none"></span>
+  <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
+  <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
+</div>
+
+<div class="container">
+  <h1>👥 Members</h1>
+  <p class="subtitle">Clan Roster &amp; Might Tracking</p>
+
+  <!-- Admin Panel - Add/Manage Members -->
+  <div class="admin-panel" id="adminPanel">
+    <h3>➕ Add New Member</h3>
+    <div class="form-row">
+      <input type="text" id="newMemberName" placeholder="Player Name">
+      <input type="date" id="newMemberJoinDate">
+      <input type="number" id="newMemberMight" placeholder="Start Might">
+      <button class="btn" onclick="addNewMember()">Add Member</button>
+    </div>
+    <h3 style="margin-top: 16px">📊 Record Might</h3>
+    <div class="form-row">
+      <select id="mightMemberSelect"><option value="">Select member...</option></select>
+      <input type="date" id="mightDate">
+      <input type="number" id="mightValue" placeholder="Might Value">
+      <button class="btn" onclick="recordMight()">Record</button>
+    </div>
+  </div>
+
+  <div class="member-count" id="memberCount"></div>
+
+  <div class="loading" id="loadingDiv"><div class="spinner"></div><br>Loading members...</div>
+  <div class="table-container" id="tableContainer" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortTable('name')">Name</th>
+          <th onclick="sortTable('joinDate')">Joined</th>
+          <th onclick="sortTable('startMight')">Start Might</th>
+          <th onclick="sortTable('latestMight')">Latest Might</th>
+          <th onclick="sortTable('growth')">Growth</th>
+          <th id="actionsHeader" style="display:none">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="membersTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let membersData = [];
+  let sortField = 'name';
+  let sortAsc = true;
+  let isLoggedIn = false;
+  let currentUser = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    checkLoginState();
+    loadMembers();
+    document.getElementById('mightDate').valueAsDate = new Date();
+  });
+
+  // AUTH (same pattern as dashboard)
+  function checkLoginState() {
+    const stored = localStorage.getItem('sk6_auth');
+    if (stored) {
+      try {
+        const auth = JSON.parse(stored);
+        if (auth.email && auth.allowed) {
+          isLoggedIn = true;
+          currentUser = auth;
+          updateLoginUI();
+        }
+      } catch (e) {}
+    }
+  }
+
+  function handleLogin() {
+    if (!document.getElementById('gsi-script')) {
+      const script = document.createElement('script');
+      script.id = 'gsi-script';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.onload = () => initGoogleLogin();
+      document.head.appendChild(script);
+    } else { initGoogleLogin(); }
+  }
+
+  function initGoogleLogin() {
+    google.accounts.id.initialize({ client_id: SITE_CONFIG.googleClientId, callback: handleGoogleCallback });
+    google.accounts.id.prompt();
+  }
+
+  async function handleGoogleCallback(response) {
+    try {
+      const res = await fetch(window.GAS_WEB_APP_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: response.credential })
+      });
+      const data = await res.json();
+      if (data.success && data.email) {
+        const verifyRes = await fetch(window.GAS_WEB_APP_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'api', fn: 'verifyGoogleLogin', args: [{ email: data.email }] })
+        });
+        const verifyData = await verifyRes.json();
+        const authResult = verifyData.data || verifyData;
+        if (authResult.success && authResult.allowed) {
+          isLoggedIn = true;
+          currentUser = { email: data.email, allowed: true };
+          localStorage.setItem('sk6_auth', JSON.stringify(currentUser));
+          updateLoginUI();
+          showToast('Logged in as ' + data.email, 'success');
+        } else { showToast('Access denied', 'error'); }
+      }
+    } catch (err) { showToast('Login error', 'error'); }
+  }
+
+  function handleLogout() {
+    isLoggedIn = false; currentUser = null;
+    localStorage.removeItem('sk6_auth');
+    updateLoginUI();
+    showToast('Logged out', 'success');
+  }
+
+  function updateLoginUI() {
+    document.getElementById('userEmail').textContent = isLoggedIn ? currentUser.email : '';
+    document.getElementById('userEmail').style.display = isLoggedIn ? 'inline' : 'none';
+    document.getElementById('loginBtn').style.display = isLoggedIn ? 'none' : 'inline';
+    document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline' : 'none';
+    document.getElementById('adminPanel').classList.toggle('visible', isLoggedIn);
+    document.getElementById('actionsHeader').style.display = isLoggedIn ? '' : 'none';
+    // Re-render table to show/hide action buttons
+    if (membersData.length > 0) renderTable();
+  }
+
+  // LOAD MEMBERS
+  async function loadMembers() {
+    try {
+      const result = await callFunction('getMembersList');
+      if (Array.isArray(result)) {
+        membersData = result;
+        document.getElementById('memberCount').textContent = `${membersData.length} members`;
+        renderTable();
+        populateMightDropdown();
+      }
+      document.getElementById('loadingDiv').style.display = 'none';
+      document.getElementById('tableContainer').style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      document.getElementById('loadingDiv').innerHTML = '<span style="color:var(--danger)">Failed to load members</span>';
+    }
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('membersTableBody');
+    tbody.innerHTML = '';
+
+    const sorted = [...membersData].sort((a, b) => {
+      let va, vb;
+      switch (sortField) {
+        case 'name': va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); break;
+        case 'joinDate': va = a.joinDate || ''; vb = b.joinDate || ''; break;
+        case 'startMight': va = a.startMight || 0; vb = b.startMight || 0; break;
+        case 'latestMight': va = a.latestMight || 0; vb = b.latestMight || 0; break;
+        case 'growth': va = a.recentGrowthPercent || 0; vb = b.recentGrowthPercent || 0; break;
+        default: va = 0; vb = 0;
+      }
+      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+      return sortAsc ? va - vb : vb - va;
+    });
+
+    sorted.forEach(m => {
+      const tr = document.createElement('tr');
+      const growthClass = m.recentGrowthPercent > 0 ? 'growth-positive' : m.recentGrowthPercent < 0 ? 'growth-negative' : '';
+      const growthText = m.recentGrowthPercent !== null ? (m.recentGrowthPercent > 0 ? '+' : '') + m.recentGrowthPercent.toFixed(1) + '%' : '-';
+
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(m.name)}</strong></td>
+        <td>${escapeHtml(m.joinDate)}</td>
+        <td>${m.startMight ? m.startMight.toLocaleString() : '-'}</td>
+        <td class="might-value">${m.latestMight ? m.latestMight.toLocaleString() : '-'}</td>
+        <td class="${growthClass}">${growthText}</td>
+        ${isLoggedIn ? `<td class="member-actions">
+          <button onclick="renameMember('${escapeAttr(m.name)}')">✏️</button>
+          <button class="remove-btn" onclick="disableMember('${escapeAttr(m.name)}')">🚪</button>
+          <button class="remove-btn" onclick="removeMember('${escapeAttr(m.name)}')">🗑️</button>
+        </td>` : ''}
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function sortTable(field) {
+    if (sortField === field) sortAsc = !sortAsc;
+    else { sortField = field; sortAsc = true; }
+    renderTable();
+  }
+
+  function populateMightDropdown() {
+    const select = document.getElementById('mightMemberSelect');
+    select.innerHTML = '<option value="">Select member...</option>';
+    membersData.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.name;
+      opt.textContent = m.name;
+      select.appendChild(opt);
+    });
+  }
+
+  // MEMBER ACTIONS
+  async function addNewMember() {
+    const name = document.getElementById('newMemberName').value.trim();
+    const joinDate = document.getElementById('newMemberJoinDate').value;
+    const might = document.getElementById('newMemberMight').value;
+    if (!name) { showToast('Name is required', 'error'); return; }
+
+    try {
+      const result = await callFunction('addMember', [name, joinDate, might ? Number(might) : 0]);
+      if (result && result.success) {
+        showToast(result.message, 'success');
+        document.getElementById('newMemberName').value = '';
+        document.getElementById('newMemberMight').value = '';
+        loadMembers();
+      } else {
+        showToast(result?.message || 'Failed to add member', 'error');
+      }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  async function removeMember(name) {
+    if (!confirm(`Remove "${name}" permanently?`)) return;
+    try {
+      const result = await callFunction('removeMember', [name]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) loadMembers();
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  async function disableMember(name) {
+    if (!confirm(`Archive "${name}" as former member?`)) return;
+    const endDate = new Date().toISOString().split('T')[0];
+    try {
+      const result = await callFunction('disableMember', [name, endDate]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) loadMembers();
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  async function renameMember(oldName) {
+    const newName = prompt(`New name for "${oldName}":`, oldName);
+    if (!newName || newName === oldName) return;
+    try {
+      const result = await callFunction('updateMemberName', [oldName, newName]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) loadMembers();
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  async function recordMight() {
+    const member = document.getElementById('mightMemberSelect').value;
+    const date = document.getElementById('mightDate').value;
+    const might = document.getElementById('mightValue').value;
+    if (!member || !date || !might) { showToast('All fields required', 'error'); return; }
+
+    try {
+      const result = await callFunction('recordMemberMight', [member, date, might]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) {
+        document.getElementById('mightValue').value = '';
+        loadMembers();
+      }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // UTILITIES
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function escapeAttr(str) {
+    return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+  }
+  function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast ' + (type || '');
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>

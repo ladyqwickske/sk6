@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cCc SK6 - Events</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+  <script src="config.js"></script>
+  <script src="site-config.js"></script>
+  <script src="portal-shim.js"></script>
+  <style>
+    :root {
+      --primary: #ffb300; --bg-dark: #232526; --bg-card: rgba(30, 34, 40, 0.95);
+      --text: #f3f3f3; --text-muted: #aaa; --success: #4CAF50; --danger: #e74c3c; --border: #444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      color: var(--text); min-height: 100vh; background-attachment: fixed;
+      padding: 60px 8px 80px 8px;
+    }
+    .tab-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      display: flex; justify-content: center; background: #1a1d21;
+      border-bottom: 2px solid var(--primary);
+    }
+    .tab-nav a {
+      color: var(--text-muted); text-decoration: none; padding: 12px 18px;
+      font-size: 0.95em; font-weight: 500; border-bottom: 3px solid transparent;
+    }
+    .tab-nav a:hover { color: var(--primary); }
+    .tab-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .login-bar {
+      position: fixed; top: 0; right: 8px; z-index: 1001;
+      display: flex; align-items: center; gap: 8px; padding: 8px;
+    }
+    .login-bar .user-email { font-size: 0.8em; color: var(--primary); }
+    .login-bar button {
+      background: var(--primary); color: #000; border: none; border-radius: 6px;
+      padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 0.85em;
+    }
+    .login-bar .logout-btn { background: #555; color: #fff; }
+    .container {
+      max-width: 1200px; margin: 0 auto; background: var(--bg-card);
+      border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.25); padding: 24px 16px;
+    }
+    h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
+    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
+
+    /* Admin panel */
+    .admin-panel { display: none; background: #2a2d32; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .admin-panel.visible { display: block; }
+    .admin-panel h3 { color: var(--primary); margin-bottom: 12px; font-size: 1em; }
+    .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .form-row input, .form-row select {
+      flex: 1; min-width: 120px; padding: 8px 12px;
+      background: #1a1d21; border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 0.9em;
+    }
+    .btn {
+      background: var(--primary); color: #000; border: none; border-radius: 8px;
+      padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9em;
+    }
+    .btn:hover { background: #ffc107; }
+    .btn.danger { background: var(--danger); color: #fff; }
+    .btn.secondary { background: #555; color: #fff; }
+
+    /* Tabs */
+    .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .sub-tabs button {
+      background: #333; color: var(--text); border: 1px solid var(--border);
+      border-radius: 8px 8px 0 0; padding: 8px 16px; cursor: pointer; font-size: 0.9em;
+    }
+    .sub-tabs button.active { background: var(--primary); color: #000; border-color: var(--primary); }
+
+    /* Events Table */
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+    th { background: #333; color: var(--primary); padding: 10px 8px; text-align: left; border-bottom: 2px solid var(--primary); }
+    td { padding: 8px; border-bottom: 1px solid #333; }
+    tr:hover { background: rgba(255,179,0,0.05); }
+
+    .method-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; font-weight: 600;
+    }
+    .method-chest { background: #1b5e20; color: #a5d6a7; }
+    .method-manual { background: #1a237e; color: #90caf9; }
+    .method-period { background: #4a148c; color: #ce93d8; }
+
+    .event-actions button {
+      background: #444; color: var(--text); border: none; border-radius: 4px;
+      padding: 4px 8px; cursor: pointer; font-size: 0.8em; margin-right: 4px;
+    }
+    .event-actions button:hover { background: #555; }
+
+    /* Participation Section */
+    .participation-section {
+      background: #2a2d32; border-radius: 12px; padding: 16px; margin-top: 16px;
+    }
+    .participation-section h3 { color: var(--primary); margin-bottom: 12px; }
+
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); }
+    .spinner {
+      display: inline-block; width: 24px; height: 24px;
+      border: 3px solid var(--border); border-top-color: var(--primary);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; z-index: 3000;
+      background: #333; color: var(--text); padding: 12px 20px;
+      border-radius: 8px; font-size: 0.9em; display: none;
+    }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+    @media (max-width: 600px) {
+      body { padding: 50px 4px 70px 4px; }
+      .tab-nav a { padding: 10px 10px; font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="tab-nav">
+  <a href="dashboard.html">📊 Dashboard</a>
+  <a href="events.html" class="active">⚔️ Events</a>
+  <a href="members.html">👥 Members</a>
+  <a href="calendar.html">📅 Calendar</a>
+</nav>
+
+<div class="login-bar">
+  <span class="user-email" id="userEmail" style="display:none"></span>
+  <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
+  <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
+</div>
+
+<div class="container">
+  <h1>⚔️ Events</h1>
+  <p class="subtitle">Event Management &amp; Participation Tracking</p>
+
+  <!-- Sub-tabs: Events / Event Types -->
+  <div class="sub-tabs">
+    <button class="active" onclick="switchTab('events', this)">Events</button>
+    <button onclick="switchTab('types', this)">Event Types</button>
+  </div>
+
+  <!-- Add Event Form (admin only) -->
+  <div class="admin-panel" id="adminPanel">
+    <h3 id="eventFormTitle">➕ Add New Event</h3>
+    <div class="form-row">
+      <input type="text" id="eventName" placeholder="Event Name">
+      <select id="eventType"><option value="">Select type...</option></select>
+      <input type="date" id="eventStartDate">
+      <input type="date" id="eventEndDate">
+      <input type="number" id="eventTargetPoints" placeholder="Target Points">
+    </div>
+    <div class="form-row">
+      <button class="btn" onclick="saveEvent()">Save Event</button>
+      <button class="btn secondary" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Events List -->
+  <div id="eventsTab">
+    <div class="loading" id="eventsLoading"><div class="spinner"></div><br>Loading events...</div>
+    <div class="table-container" id="eventsTableContainer" style="display:none">
+      <table>
+        <thead>
+          <tr>
+            <th>Event Name</th>
+            <th>Type</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Method</th>
+            <th>Target</th>
+            <th id="eventActionsHeader" style="display:none">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="eventsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Event Types Tab -->
+  <div id="typesTab" style="display:none">
+    <div class="admin-panel" id="typeAdminPanel">
+      <h3 id="typeFormTitle">➕ Add Event Type</h3>
+      <div class="form-row">
+        <input type="text" id="typeName" placeholder="Type Name">
+        <select id="typeMethod">
+          <option value="chest-based">Chest-based</option>
+          <option value="manual-entry">Manual Entry</option>
+          <option value="period-marker">Period Marker</option>
+        </select>
+        <input type="text" id="typeChestTypes" placeholder="Chest types (comma-separated)">
+      </div>
+      <div class="form-row">
+        <input type="text" id="typeDescription" placeholder="Description">
+        <input type="number" id="typeThreshold" placeholder="Threshold">
+        <button class="btn" onclick="saveEventType()">Save Type</button>
+        <button class="btn secondary" id="cancelTypeEditBtn" style="display:none" onclick="cancelTypeEdit()">Cancel</button>
+      </div>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Type Name</th>
+            <th>Method</th>
+            <th>Chest Types</th>
+            <th>Threshold</th>
+            <th id="typeActionsHeader" style="display:none">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="typesTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Participation Detail -->
+  <div class="participation-section" id="participationSection" style="display:none">
+    <h3 id="participationTitle">Participation</h3>
+    <div class="form-row" id="participationActions" style="display:none">
+      <button class="btn" onclick="calculateParticipation()">🔄 Recalculate</button>
+      <button class="btn secondary" onclick="fillNonParticipants()">Fill Non-Participants</button>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead><tr id="participationHeaders"></tr></thead>
+        <tbody id="participationBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let eventsData = [];
+  let eventTypesData = [];
+  let isLoggedIn = false;
+  let currentUser = null;
+  let editingEvent = null;
+  let editingType = null;
+  let selectedEvent = null;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    checkLoginState();
+    loadEvents();
+    loadEventTypes();
+  });
+
+  // AUTH
+  function checkLoginState() {
+    const stored = localStorage.getItem('sk6_auth');
+    if (stored) {
+      try {
+        const auth = JSON.parse(stored);
+        if (auth.email && auth.allowed) { isLoggedIn = true; currentUser = auth; updateLoginUI(); }
+      } catch (e) {}
+    }
+  }
+  function handleLogin() {
+    if (!document.getElementById('gsi-script')) {
+      const s = document.createElement('script'); s.id = 'gsi-script';
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.onload = () => { google.accounts.id.initialize({ client_id: SITE_CONFIG.googleClientId, callback: handleGoogleCallback }); google.accounts.id.prompt(); };
+      document.head.appendChild(s);
+    } else { google.accounts.id.prompt(); }
+  }
+  async function handleGoogleCallback(response) {
+    try {
+      const res = await fetch(window.GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: response.credential }) });
+      const data = await res.json();
+      if (data.success && data.email) {
+        const vRes = await fetch(window.GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'api', fn: 'verifyGoogleLogin', args: [{ email: data.email }] }) });
+        const vData = await vRes.json();
+        const auth = vData.data || vData;
+        if (auth.success && auth.allowed) {
+          isLoggedIn = true; currentUser = { email: data.email, allowed: true };
+          localStorage.setItem('sk6_auth', JSON.stringify(currentUser));
+          updateLoginUI(); showToast('Logged in', 'success');
+        } else { showToast('Access denied', 'error'); }
+      }
+    } catch (err) { showToast('Login error', 'error'); }
+  }
+  function handleLogout() { isLoggedIn = false; currentUser = null; localStorage.removeItem('sk6_auth'); updateLoginUI(); }
+  function updateLoginUI() {
+    document.getElementById('userEmail').textContent = isLoggedIn ? currentUser.email : '';
+    document.getElementById('userEmail').style.display = isLoggedIn ? 'inline' : 'none';
+    document.getElementById('loginBtn').style.display = isLoggedIn ? 'none' : 'inline';
+    document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline' : 'none';
+    document.getElementById('adminPanel').classList.toggle('visible', isLoggedIn);
+    document.getElementById('typeAdminPanel').classList.toggle('visible', isLoggedIn);
+    document.getElementById('eventActionsHeader').style.display = isLoggedIn ? '' : 'none';
+    document.getElementById('typeActionsHeader').style.display = isLoggedIn ? '' : 'none';
+    if (isLoggedIn) document.getElementById('participationActions').style.display = 'flex';
+    if (eventsData.length > 0) renderEvents();
+    if (eventTypesData.length > 0) renderEventTypes();
+  }
+
+  // TABS
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.sub-tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('eventsTab').style.display = tab === 'events' ? 'block' : 'none';
+    document.getElementById('typesTab').style.display = tab === 'types' ? 'block' : 'none';
+    document.getElementById('adminPanel').style.display = (tab === 'events' && isLoggedIn) ? 'block' : 'none';
+  }
+
+  // LOAD DATA
+  async function loadEvents() {
+    try {
+      const result = await callFunction('getAllEvents');
+      if (result && result.success) {
+        eventsData = result.events || [];
+        renderEvents();
+      }
+      document.getElementById('eventsLoading').style.display = 'none';
+      document.getElementById('eventsTableContainer').style.display = 'block';
+    } catch (err) {
+      document.getElementById('eventsLoading').innerHTML = '<span style="color:var(--danger)">Failed to load events</span>';
+    }
+  }
+
+  async function loadEventTypes() {
+    try {
+      const result = await callFunction('getAllEventTypes');
+      if (result && result.success) {
+        eventTypesData = result.eventTypes || [];
+        renderEventTypes();
+        populateEventTypeDropdown();
+      }
+    } catch (err) { console.error(err); }
+  }
+
+  function populateEventTypeDropdown() {
+    const select = document.getElementById('eventType');
+    select.innerHTML = '<option value="">Select type...</option>';
+    eventTypesData.forEach(et => {
+      const opt = document.createElement('option');
+      opt.value = et.name; opt.textContent = et.name;
+      select.appendChild(opt);
+    });
+  }
+
+  // RENDER
+  function renderEvents() {
+    const tbody = document.getElementById('eventsTableBody');
+    tbody.innerHTML = '';
+    const sorted = [...eventsData].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+    sorted.forEach(ev => {
+      const methodClass = ev.participationMethod === 'chest-based' ? 'method-chest' :
+        ev.participationMethod === 'period-marker' ? 'method-period' : 'method-manual';
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.onclick = () => showParticipation(ev);
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(ev.eventName)}</strong></td>
+        <td>${escapeHtml(ev.eventType)}</td>
+        <td>${ev.startDate || '-'}</td>
+        <td>${ev.endDate || '-'}</td>
+        <td><span class="method-badge ${methodClass}">${ev.participationMethod}</span></td>
+        <td>${ev.targetPoints || '-'}</td>
+        ${isLoggedIn ? `<td class="event-actions" onclick="event.stopPropagation()">
+          <button onclick="editEvent('${escapeAttr(ev.eventName)}')">✏️</button>
+          <button onclick="deleteEvent('${escapeAttr(ev.eventName)}')">🗑️</button>
+        </td>` : ''}
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderEventTypes() {
+    const tbody = document.getElementById('typesTableBody');
+    tbody.innerHTML = '';
+    eventTypesData.forEach(et => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(et.name)}</strong></td>
+        <td>${et.trackingMethod}</td>
+        <td>${escapeHtml(et.chestTypes)}</td>
+        <td>${et.threshold || '-'}</td>
+        ${isLoggedIn ? `<td class="event-actions">
+          <button onclick="editEventType('${escapeAttr(et.name)}')">✏️</button>
+          <button onclick="deleteEventType('${escapeAttr(et.name)}')">🗑️</button>
+        </td>` : ''}
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // EVENT CRUD
+  async function saveEvent() {
+    const name = document.getElementById('eventName').value.trim();
+    const type = document.getElementById('eventType').value;
+    const start = document.getElementById('eventStartDate').value;
+    const end = document.getElementById('eventEndDate').value;
+    const target = document.getElementById('eventTargetPoints').value;
+    if (!name || !type || !start || !end) { showToast('All fields required', 'error'); return; }
+
+    try {
+      let result;
+      if (editingEvent) {
+        result = await callFunction('updateEvent', [editingEvent, name, type, start, end, target ? Number(target) : null]);
+      } else {
+        result = await callFunction('addEvent', [name, type, start, end, target ? Number(target) : null]);
+      }
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) { cancelEdit(); loadEvents(); }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  function editEvent(name) {
+    const ev = eventsData.find(e => e.eventName === name);
+    if (!ev) return;
+    editingEvent = name;
+    document.getElementById('eventName').value = ev.eventName;
+    document.getElementById('eventType').value = ev.eventType;
+    document.getElementById('eventStartDate').value = ev.startDate;
+    document.getElementById('eventEndDate').value = ev.endDate;
+    document.getElementById('eventTargetPoints').value = ev.targetPoints || '';
+    document.getElementById('eventFormTitle').textContent = '✏️ Edit Event';
+    document.getElementById('cancelEditBtn').style.display = 'inline';
+  }
+
+  function cancelEdit() {
+    editingEvent = null;
+    document.getElementById('eventName').value = '';
+    document.getElementById('eventType').value = '';
+    document.getElementById('eventStartDate').value = '';
+    document.getElementById('eventEndDate').value = '';
+    document.getElementById('eventTargetPoints').value = '';
+    document.getElementById('eventFormTitle').textContent = '➕ Add New Event';
+    document.getElementById('cancelEditBtn').style.display = 'none';
+  }
+
+  async function deleteEvent(name) {
+    if (!confirm(`Delete event "${name}"?`)) return;
+    try {
+      const result = await callFunction('deleteEvent', [name]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) loadEvents();
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // EVENT TYPE CRUD
+  async function saveEventType() {
+    const name = document.getElementById('typeName').value.trim();
+    const method = document.getElementById('typeMethod').value;
+    const chestTypes = document.getElementById('typeChestTypes').value;
+    const description = document.getElementById('typeDescription').value;
+    const threshold = document.getElementById('typeThreshold').value;
+    if (!name || !method) { showToast('Name and method required', 'error'); return; }
+
+    try {
+      let result;
+      if (editingType) {
+        result = await callFunction('updateEventType', [editingType, name, method, chestTypes, description, threshold ? Number(threshold) : 0]);
+      } else {
+        result = await callFunction('addEventType', [name, method, chestTypes, description, threshold ? Number(threshold) : 0]);
+      }
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) { cancelTypeEdit(); loadEventTypes(); }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  function editEventType(name) {
+    const et = eventTypesData.find(t => t.name === name);
+    if (!et) return;
+    editingType = name;
+    document.getElementById('typeName').value = et.name;
+    document.getElementById('typeMethod').value = et.trackingMethod;
+    document.getElementById('typeChestTypes').value = et.chestTypes;
+    document.getElementById('typeDescription').value = et.description || '';
+    document.getElementById('typeThreshold').value = et.threshold || '';
+    document.getElementById('typeFormTitle').textContent = '✏️ Edit Event Type';
+    document.getElementById('cancelTypeEditBtn').style.display = 'inline';
+  }
+
+  function cancelTypeEdit() {
+    editingType = null;
+    document.getElementById('typeName').value = '';
+    document.getElementById('typeMethod').value = 'chest-based';
+    document.getElementById('typeChestTypes').value = '';
+    document.getElementById('typeDescription').value = '';
+    document.getElementById('typeThreshold').value = '';
+    document.getElementById('typeFormTitle').textContent = '➕ Add Event Type';
+    document.getElementById('cancelTypeEditBtn').style.display = 'none';
+  }
+
+  async function deleteEventType(name) {
+    if (!confirm(`Delete event type "${name}"?`)) return;
+    try {
+      const result = await callFunction('deleteEventType', [name]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) loadEventTypes();
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // PARTICIPATION
+  async function showParticipation(ev) {
+    selectedEvent = ev;
+    document.getElementById('participationSection').style.display = 'block';
+    document.getElementById('participationTitle').textContent = `📊 ${ev.eventName} — Participation`;
+
+    if (ev.participationMethod === 'period-marker') {
+      document.getElementById('participationBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Period markers don\'t track participation</td></tr>';
+      document.getElementById('participationHeaders').innerHTML = '';
+      return;
+    }
+
+    try {
+      const result = await callFunction('getEventParticipation', [ev.eventName]);
+      if (result && result.success && result.data.length > 0) {
+        const headers = Object.keys(result.data[0]);
+        document.getElementById('participationHeaders').innerHTML = headers.map(h => `<th>${escapeHtml(h)}</th>`).join('');
+        document.getElementById('participationBody').innerHTML = result.data.map(row =>
+          '<tr>' + headers.map(h => `<td>${escapeHtml(String(row[h] || ''))}</td>`).join('') + '</tr>'
+        ).join('');
+      } else {
+        document.getElementById('participationHeaders').innerHTML = '';
+        document.getElementById('participationBody').innerHTML = '<tr><td style="text-align:center;color:var(--text-muted)">No participation data yet</td></tr>';
+      }
+    } catch (err) { showToast('Error loading participation', 'error'); }
+  }
+
+  async function calculateParticipation() {
+    if (!selectedEvent) return;
+    try {
+      const result = await callFunction('calculateChestParticipation', [selectedEvent.eventName, selectedEvent.startDate, selectedEvent.endDate, selectedEvent.eventType]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) showParticipation(selectedEvent);
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  async function fillNonParticipants() {
+    if (!selectedEvent) return;
+    try {
+      const result = await callFunction('calculateManualNonParticipants', [selectedEvent.eventName]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) showParticipation(selectedEvent);
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // UTILITIES
+  function escapeHtml(str) { if (!str) return ''; const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+  function escapeAttr(str) { return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+  function showToast(msg, type) {
+    const t = document.getElementById('toast'); t.textContent = msg;
+    t.className = 'toast ' + (type || ''); t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+  }
+</script>
+</body>
+</html>
