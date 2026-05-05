@@ -190,8 +190,8 @@
 <!-- Tab Navigation -->
 <nav class="tab-nav" id="tabNav">
   <a href="dashboard.html" class="active">📊 Dashboard</a>
-  <a href="events.html">⚔️ Events</a>
-  <a href="members.html">👥 Members</a>
+  <a href="events.html" id="navEvents" style="display:none">⚔️ Events</a>
+  <a href="members.html" id="navMembers" style="display:none">👥 Members</a>
   <a href="calendar.html">📅 Calendar</a>
 </nav>
 
@@ -385,6 +385,9 @@
       loginBtn.style.display = 'inline';
       logoutBtn.style.display = 'none';
     }
+    // Show/hide protected nav links
+    document.getElementById('navEvents').style.display = isLoggedIn ? '' : 'none';
+    document.getElementById('navMembers').style.display = isLoggedIn ? '' : 'none';
   }
 
   // ===========================

@@ -145,8 +145,8 @@
 
 <nav class="tab-nav">
   <a href="dashboard.html">📊 Dashboard</a>
-  <a href="events.html">⚔️ Events</a>
-  <a href="members.html">👥 Members</a>
+  <a href="events.html" id="navEvents" style="display:none">⚔️ Events</a>
+  <a href="members.html" id="navMembers" style="display:none">👥 Members</a>
   <a href="calendar.html" class="active">📅 Calendar</a>
 </nav>
 
@@ -256,6 +256,9 @@
     document.getElementById('userEmail').style.display = isLoggedIn ? 'inline' : 'none';
     document.getElementById('loginBtn').style.display = isLoggedIn ? 'none' : 'inline';
     document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline' : 'none';
+    // Show/hide protected nav links
+    document.getElementById('navEvents').style.display = isLoggedIn ? '' : 'none';
+    document.getElementById('navMembers').style.display = isLoggedIn ? '' : 'none';
   }
 
   // LOAD EVENTS

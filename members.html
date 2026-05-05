@@ -140,9 +140,15 @@
   <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
 </div>
 
-<div class="container">
+<div class="login-gate" id="loginGate" style="max-width:500px;margin:80px auto;text-align:center;background:var(--bg-card);border-radius:16px;padding:40px 24px;">
+  <h2 style="color:var(--primary);margin-bottom:12px;">🔒 Login Required</h2>
+  <p style="color:var(--text-muted);margin-bottom:20px;">You need to be logged in to view the Members page.</p>
+  <button class="btn" onclick="handleLogin()" style="padding:12px 32px;font-size:1em;">🔑 Login</button>
+</div>
+
+<div class="container" id="mainContent" style="display:none">
   <h1>👥 Members</h1>
-  <p class="subtitle">Clan Roster &amp; Might Tracking</p>
+  <p class="subtitle">Clan Roster</p>
 
   <!-- Admin Panel - Add/Manage Members -->
   <div class="admin-panel" id="adminPanel">
@@ -150,15 +156,7 @@
     <div class="form-row">
       <input type="text" id="newMemberName" placeholder="Player Name">
       <input type="date" id="newMemberJoinDate">
-      <input type="number" id="newMemberMight" placeholder="Start Might">
       <button class="btn" onclick="addNewMember()">Add Member</button>
-    </div>
-    <h3 style="margin-top: 16px">📊 Record Might</h3>
-    <div class="form-row">
-      <select id="mightMemberSelect"><option value="">Select member...</option></select>
-      <input type="date" id="mightDate">
-      <input type="number" id="mightValue" placeholder="Might Value">
-      <button class="btn" onclick="recordMight()">Record</button>
     </div>
   </div>
 
@@ -171,9 +169,6 @@
         <tr>
           <th onclick="sortTable('name')">Name</th>
           <th onclick="sortTable('joinDate')">Joined</th>
-          <th onclick="sortTable('startMight')">Start Might</th>
-          <th onclick="sortTable('latestMight')">Latest Might</th>
-          <th onclick="sortTable('growth')">Growth</th>
           <th id="actionsHeader" style="display:none">Actions</th>
         </tr>
       </thead>
@@ -193,8 +188,11 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     checkLoginState();
-    loadMembers();
-    document.getElementById('mightDate').valueAsDate = new Date();
+    if (isLoggedIn) {
+      document.getElementById('loginGate').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+      loadMembers();
+    }
   });
 
   // AUTH (same pattern as dashboard)
@@ -255,8 +253,7 @@
   function handleLogout() {
     isLoggedIn = false; currentUser = null;
     localStorage.removeItem('sk6_auth');
-    updateLoginUI();
-    showToast('Logged out', 'success');
+    window.location.href = 'dashboard.html';
   }
 
   function updateLoginUI() {
@@ -266,7 +263,10 @@
     document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline' : 'none';
     document.getElementById('adminPanel').classList.toggle('visible', isLoggedIn);
     document.getElementById('actionsHeader').style.display = isLoggedIn ? '' : 'none';
-    // Re-render table to show/hide action buttons
+    // Show/hide main content based on login
+    document.getElementById('loginGate').style.display = isLoggedIn ? 'none' : 'block';
+    document.getElementById('mainContent').style.display = isLoggedIn ? 'block' : 'none';
+    if (isLoggedIn && membersData.length === 0) loadMembers();
     if (membersData.length > 0) renderTable();
   }
 
@@ -278,7 +278,6 @@
         membersData = result;
         document.getElementById('memberCount').textContent = `${membersData.length} members`;
         renderTable();
-        populateMightDropdown();
       }
       document.getElementById('loadingDiv').style.display = 'none';
       document.getElementById('tableContainer').style.display = 'block';
@@ -297,9 +296,6 @@
       switch (sortField) {
         case 'name': va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); break;
         case 'joinDate': va = a.joinDate || ''; vb = b.joinDate || ''; break;
-        case 'startMight': va = a.startMight || 0; vb = b.startMight || 0; break;
-        case 'latestMight': va = a.latestMight || 0; vb = b.latestMight || 0; break;
-        case 'growth': va = a.recentGrowthPercent || 0; vb = b.recentGrowthPercent || 0; break;
         default: va = 0; vb = 0;
       }
       if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
@@ -308,18 +304,11 @@
 
     sorted.forEach(m => {
       const tr = document.createElement('tr');
-      const growthClass = m.recentGrowthPercent > 0 ? 'growth-positive' : m.recentGrowthPercent < 0 ? 'growth-negative' : '';
-      const growthText = m.recentGrowthPercent !== null ? (m.recentGrowthPercent > 0 ? '+' : '') + m.recentGrowthPercent.toFixed(1) + '%' : '-';
-
       tr.innerHTML = `
         <td><strong>${escapeHtml(m.name)}</strong></td>
         <td>${escapeHtml(m.joinDate)}</td>
-        <td>${m.startMight ? m.startMight.toLocaleString() : '-'}</td>
-        <td class="might-value">${m.latestMight ? m.latestMight.toLocaleString() : '-'}</td>
-        <td class="${growthClass}">${growthText}</td>
         ${isLoggedIn ? `<td class="member-actions">
           <button onclick="renameMember('${escapeAttr(m.name)}')">✏️</button>
-          <button class="remove-btn" onclick="disableMember('${escapeAttr(m.name)}')">🚪</button>
           <button class="remove-btn" onclick="removeMember('${escapeAttr(m.name)}')">🗑️</button>
         </td>` : ''}
       `;
@@ -333,30 +322,17 @@
     renderTable();
   }
 
-  function populateMightDropdown() {
-    const select = document.getElementById('mightMemberSelect');
-    select.innerHTML = '<option value="">Select member...</option>';
-    membersData.forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m.name;
-      opt.textContent = m.name;
-      select.appendChild(opt);
-    });
-  }
-
   // MEMBER ACTIONS
   async function addNewMember() {
     const name = document.getElementById('newMemberName').value.trim();
     const joinDate = document.getElementById('newMemberJoinDate').value;
-    const might = document.getElementById('newMemberMight').value;
     if (!name) { showToast('Name is required', 'error'); return; }
 
     try {
-      const result = await callFunction('addMember', [name, joinDate, might ? Number(might) : 0]);
+      const result = await callFunction('addMember', [name, joinDate, 0]);
       if (result && result.success) {
         showToast(result.message, 'success');
         document.getElementById('newMemberName').value = '';
-        document.getElementById('newMemberMight').value = '';
         loadMembers();
       } else {
         showToast(result?.message || 'Failed to add member', 'error');
@@ -373,16 +349,6 @@
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 
-  async function disableMember(name) {
-    if (!confirm(`Archive "${name}" as former member?`)) return;
-    const endDate = new Date().toISOString().split('T')[0];
-    try {
-      const result = await callFunction('disableMember', [name, endDate]);
-      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
-      if (result?.success) loadMembers();
-    } catch (err) { showToast('Error: ' + err.message, 'error'); }
-  }
-
   async function renameMember(oldName) {
     const newName = prompt(`New name for "${oldName}":`, oldName);
     if (!newName || newName === oldName) return;
@@ -390,22 +356,6 @@
       const result = await callFunction('updateMemberName', [oldName, newName]);
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
       if (result?.success) loadMembers();
-    } catch (err) { showToast('Error: ' + err.message, 'error'); }
-  }
-
-  async function recordMight() {
-    const member = document.getElementById('mightMemberSelect').value;
-    const date = document.getElementById('mightDate').value;
-    const might = document.getElementById('mightValue').value;
-    if (!member || !date || !might) { showToast('All fields required', 'error'); return; }
-
-    try {
-      const result = await callFunction('recordMemberMight', [member, date, might]);
-      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
-      if (result?.success) {
-        document.getElementById('mightValue').value = '';
-        loadMembers();
-      }
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 

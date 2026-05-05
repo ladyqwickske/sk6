@@ -135,7 +135,13 @@
   <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
 </div>
 
-<div class="container">
+<div class="login-gate" id="loginGate" style="max-width:500px;margin:80px auto;text-align:center;background:var(--bg-card);border-radius:16px;padding:40px 24px;">
+  <h2 style="color:var(--primary);margin-bottom:12px;">🔒 Login Required</h2>
+  <p style="color:var(--text-muted);margin-bottom:20px;">You need to be logged in to view the Events page.</p>
+  <button class="btn" onclick="handleLogin()" style="padding:12px 32px;font-size:1em;">🔑 Login</button>
+</div>
+
+<div class="container" id="mainContent" style="display:none">
   <h1>⚔️ Events</h1>
   <p class="subtitle">Event Management &amp; Participation Tracking</p>
 
@@ -247,8 +253,12 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     checkLoginState();
-    loadEvents();
-    loadEventTypes();
+    if (isLoggedIn) {
+      document.getElementById('loginGate').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+      loadEvents();
+      loadEventTypes();
+    }
   });
 
   // AUTH
@@ -285,19 +295,26 @@
       }
     } catch (err) { showToast('Login error', 'error'); }
   }
-  function handleLogout() { isLoggedIn = false; currentUser = null; localStorage.removeItem('sk6_auth'); updateLoginUI(); }
+  function handleLogout() { isLoggedIn = false; currentUser = null; localStorage.removeItem('sk6_auth'); window.location.href = 'dashboard.html'; }
   function updateLoginUI() {
     document.getElementById('userEmail').textContent = isLoggedIn ? currentUser.email : '';
     document.getElementById('userEmail').style.display = isLoggedIn ? 'inline' : 'none';
     document.getElementById('loginBtn').style.display = isLoggedIn ? 'none' : 'inline';
     document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline' : 'none';
-    document.getElementById('adminPanel').classList.toggle('visible', isLoggedIn);
-    document.getElementById('typeAdminPanel').classList.toggle('visible', isLoggedIn);
-    document.getElementById('eventActionsHeader').style.display = isLoggedIn ? '' : 'none';
-    document.getElementById('typeActionsHeader').style.display = isLoggedIn ? '' : 'none';
-    if (isLoggedIn) document.getElementById('participationActions').style.display = 'flex';
-    if (eventsData.length > 0) renderEvents();
-    if (eventTypesData.length > 0) renderEventTypes();
+    // Show/hide main content based on login
+    document.getElementById('loginGate').style.display = isLoggedIn ? 'none' : 'block';
+    document.getElementById('mainContent').style.display = isLoggedIn ? 'block' : 'none';
+    if (isLoggedIn) {
+      document.getElementById('adminPanel').classList.add('visible');
+      document.getElementById('typeAdminPanel').classList.add('visible');
+      document.getElementById('eventActionsHeader').style.display = '';
+      document.getElementById('typeActionsHeader').style.display = '';
+      document.getElementById('participationActions').style.display = 'flex';
+      if (eventsData.length === 0) loadEvents();
+      if (eventTypesData.length === 0) loadEventTypes();
+      if (eventsData.length > 0) renderEvents();
+      if (eventTypesData.length > 0) renderEventTypes();
+    }
   }
 
   // TABS
