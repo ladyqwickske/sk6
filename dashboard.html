@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>cCc SK6 - Dashboard</title>
+  <title>cCc Champions SK6 - Dashboard</title>
   <link rel="icon" type="image/png" href="ccc-sk6.png">
   <script src="config.js"></script>
   <script src="site-config.js"></script>
@@ -68,7 +68,8 @@
 
     h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
     .site-logo { width: 64px; height: 64px; display: block; margin: 0 auto 8px auto; }
-    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
+    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 4px; font-size: 0.9em; }
+    .last-updated { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.78em; font-style: italic; }
 
     /* Period Selector */
     .period-selector {
@@ -195,7 +196,7 @@
 <!-- Tab Navigation -->
 <nav class="tab-nav" id="tabNav">
   <a href="dashboard.html" class="active">📊 Dashboard</a>
-  <a href="events.html" id="navEvents" style="display:none">⚔️ Events</a>
+  <a href="events.html" id="navEvents" style="display:none">🎉 Events</a>
   <a href="members.html" id="navMembers" style="display:none">👥 Members</a>
   <a href="calendar.html">📅 Calendar</a>
 </nav>
@@ -208,9 +209,10 @@
 </div>
 
 <div class="container">
-  <img src="ccc-sk6.png" alt="cCc SK6" class="site-logo">
-  <h1>cCc SK6</h1>
+  <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
+  <h1>cCc Champions SK6</h1>
   <p class="subtitle">Seasonal Kingdom Clan Dashboard</p>
+  <p class="last-updated" id="lastUpdated">Last Updated: Never</p>
 
   <!-- Period Selector -->
   <div class="period-selector">
@@ -425,6 +427,7 @@
         document.getElementById('statPoints').textContent = (statsResult.totalPoints || 0).toLocaleString();
         document.getElementById('statPlayers').textContent = statsResult.uniquePlayers || 0;
         document.getElementById('statTop').textContent = statsResult.topPlayer || '-';
+        document.getElementById('lastUpdated').textContent = 'Last Updated: ' + (statsResult.lastUpdated || 'Never');
       }
 
       // Update player table
