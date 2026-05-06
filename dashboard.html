@@ -68,8 +68,8 @@
 
     h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
     .site-logo { width: 64px; height: 64px; display: block; margin: 0 auto 8px auto; }
-    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 4px; font-size: 0.9em; }
-    .last-updated { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.78em; font-style: italic; }
+    .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
+    .last-updated { color: var(--text-muted); font-size: 0.78em; font-style: italic; margin-top: 4px; }
 
     /* Period Selector */
     .period-selector {
@@ -101,33 +101,34 @@
     }
     .period-info .period-name { color: var(--primary); font-weight: 600; }
 
-    /* Player Table */
+    /* Player Table - Expandable Chest Type Layout */
+    .player-list { background: #fff; border-radius: 8px; padding: 0; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: auto; max-height: 70vh; border: 1px solid var(--border); position: relative; }
+    .chest-table { display: table; width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; }
+    .table-header { display: table-row; background: #e8ecef; border-bottom: 2px solid var(--primary); }
+    .header-cell { display: table-cell; padding: 10px 8px; font-weight: 600; font-size: 11px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; border-right: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; background: #e8ecef; z-index: 2; }
+    .header-cell:first-child { text-align: center; position: sticky; left: 0; z-index: 3; min-width: 45px; max-width: 50px; width: 50px; }
+    .header-cell:nth-child(2) { text-align: left; position: sticky; left: 50px; z-index: 3; min-width: 150px; }
+    .header-cell.rank-col { min-width: 45px !important; max-width: 50px !important; width: 50px !important; padding: 10px 4px; text-align: center !important; }
+    .cell.rank-col { min-width: 45px !important; max-width: 50px !important; width: 50px !important; padding: 10px 4px; text-align: center !important; }
+    .type-total-header { cursor: pointer; user-select: none; background: #f0f2f5; font-weight: 600; color: var(--primary); }
+    .type-total-header:hover { background: #d5dadf; }
+    .toggle-icon { display: inline-block; width: 16px; text-align: center; margin-right: 4px; transition: transform 0.15s; }
+    .type-total-header.expanded .toggle-icon { transform: rotate(90deg); }
+    .level-header { background: #f7f8fa; display: none; color: var(--primary); }
+    .level-header.visible { display: table-cell; }
+    .player-row { display: table-row; border-bottom: 1px solid #eee; background: #fff; }
+    .player-row:hover { background: rgba(90,125,154,0.05); }
+    .cell { display: table-cell; padding: 10px 8px; border-right: 1px solid #eee; text-align: center; font-size: 13px; vertical-align: middle; white-space: nowrap; color: var(--text); background: #fff; }
+    .cell:first-child { text-align: center; font-weight: 600; color: var(--primary); position: sticky; left: 0; background: #fff; z-index: 1; min-width: 45px; max-width: 50px; width: 50px; }
+    .cell:nth-child(2) { text-align: left; font-weight: 500; position: sticky; left: 50px; background: #fff; z-index: 1; min-width: 150px; }
+    .player-row:hover .cell:first-child, .player-row:hover .cell:nth-child(2) { background: rgba(90,125,154,0.05); }
+    .level-cell { background: #f7f8fa; display: none; font-size: 12px; color: var(--primary); }
+    .level-cell.visible { display: table-cell; }
+    .count-zero { color: #ccc; }
+    .player-red { color: var(--danger); font-weight: 500; }
+    .player-orange { color: #e67e22; font-weight: 500; }
+    .player-green { color: var(--success); font-weight: 600; }
     .table-container { overflow-x: auto; }
-    table {
-      width: 100%; border-collapse: collapse; font-size: 0.9em;
-    }
-    th {
-      background: #e8ecef; color: var(--primary); padding: 10px 8px;
-      text-align: left; position: sticky; top: 0; cursor: pointer;
-      border-bottom: 2px solid var(--primary);
-    }
-    th:hover { background: #d5dadf; }
-    td { padding: 8px; border-bottom: 1px solid #eee; }
-    tr:hover { background: rgba(90,125,154,0.05); }
-    .rank { font-weight: 700; color: var(--primary); width: 40px; }
-    .points { font-weight: 600; }
-    .points.above-target { color: var(--success); }
-    .points.below-target { color: var(--danger); }
-
-    /* Progress Bar */
-    .progress-bar {
-      width: 100%; height: 6px; background: #dcdde1; border-radius: 3px; overflow: hidden;
-    }
-    .progress-bar .fill {
-      height: 100%; background: var(--primary); border-radius: 3px;
-      transition: width 0.3s;
-    }
-    .progress-bar .fill.complete { background: var(--success); }
 
     /* Chest Points Reference Popup */
     .modal-overlay {
@@ -188,6 +189,7 @@
       .tab-nav a { padding: 10px 10px; font-size: 0.8em; }
       .stat-card .stat-value { font-size: 1.4em; }
       .container { padding: 16px 8px; }
+      .header-cell:nth-child(2), .cell:nth-child(2) { min-width: 110px; max-width: 130px; width: 120px; }
     }
   </style>
 </head>
@@ -212,7 +214,6 @@
   <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
   <h1>cCc Champions SK6</h1>
   <p class="subtitle">Seasonal Kingdom Clan Dashboard</p>
-  <p class="last-updated" id="lastUpdated">Last Updated: Never</p>
 
   <!-- Period Selector -->
   <div class="period-selector">
@@ -225,6 +226,7 @@
   <div class="period-info" id="periodInfo">
     <span class="period-name" id="periodName">Loading...</span>
     <span id="periodDates"></span>
+    <div class="last-updated" id="lastUpdated">Last Updated: Never</div>
   </div>
 
   <!-- Stats Row -->
@@ -236,21 +238,12 @@
   </div>
 
   <!-- Player Rankings -->
-  <div class="loading" id="loadingDiv"><div class="spinner"></div><br>Loading data...</div>
-  <div class="table-container" id="tableContainer" style="display:none">
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th onclick="sortTable('name')">Player</th>
-          <th onclick="sortTable('points')">Points ▼</th>
-          <th onclick="sortTable('chests')">Chests</th>
-          <th>Progress</th>
-        </tr>
-      </thead>
-      <tbody id="playerTableBody"></tbody>
-    </table>
+  <h2 style="color: var(--primary); margin-bottom: 12px; text-align: center;">🥇 Player Rankings</h2>
+  <div style="margin-bottom:12px;max-width:400px;margin-left:auto;margin-right:auto;">
+    <input type="text" id="playerFilterInput" placeholder="🔍 Filter by member name..." style="width:100%;padding:10px 14px;font-size:14px;border-radius:8px;border:1px solid var(--border);background:#fff;color:var(--text);outline:none;box-shadow:0 1px 4px rgba(0,0,0,0.06);" oninput="filterPlayerTable()">
   </div>
+  <div class="loading" id="loadingDiv"><div class="spinner"></div><br>Loading data...</div>
+  <div class="player-list" id="playerList" style="display:none"></div>
 </div>
 
 <!-- Chest Points Reference Modal -->
@@ -281,12 +274,12 @@
   let currentPeriod = 'active';
   let playerData = [];
   let chestRefData = [];
-  let sortField = 'points';
-  let sortAsc = false;
   let isLoggedIn = false;
   let currentUser = null;
   let currentPeriodDates = null;
   let targetPoints = 3000;
+  let currentSplits = {};
+  const expandedTypes = new Set();
 
   // ===========================
   // INITIALIZATION
@@ -314,7 +307,6 @@
   }
 
   function handleLogin() {
-    // Load Google Identity Services
     if (!document.getElementById('gsi-script')) {
       const script = document.createElement('script');
       script.id = 'gsi-script';
@@ -344,7 +336,6 @@
       const data = await res.json();
 
       if (data.success && data.email) {
-        // Now verify with backend
         const verifyRes = await fetch(window.GAS_WEB_APP_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -393,7 +384,6 @@
       loginBtn.style.display = 'inline';
       logoutBtn.style.display = 'none';
     }
-    // Show/hide protected nav links
     document.getElementById('navEvents').style.display = isLoggedIn ? '' : 'none';
     document.getElementById('navMembers').style.display = isLoggedIn ? '' : 'none';
   }
@@ -403,13 +393,14 @@
   // ===========================
   async function loadDashboard() {
     try {
-      const periodPreset = currentPeriod === 'active' ? 'lastday' : 'prevweek';
+      document.getElementById('loadingDiv').style.display = 'block';
+      document.getElementById('playerList').style.display = 'none';
 
-      // Load period dates and stats in parallel
-      const [periodResult, statsResult, playerResult] = await Promise.all([
+      const [periodResult, statsResult, playerResult, splitsResult] = await Promise.all([
         callFunction(currentPeriod === 'active' ? 'getActivePeriodDates' : 'getPreviousPeriodDates'),
         callFunction('getStatsSummary', []),
-        callFunction('getPlayerStats', [])
+        callFunction('getPlayerStats', []),
+        callFunction('getSplits', [])
       ]);
 
       // Update period info
@@ -430,14 +421,17 @@
         document.getElementById('lastUpdated').textContent = 'Last Updated: ' + (statsResult.lastUpdated || 'Never');
       }
 
+      // Store splits
+      currentSplits = splitsResult || {};
+
       // Update player table
       if (playerResult && Array.isArray(playerResult)) {
         playerData = playerResult;
-        renderPlayerTable();
+        displayPlayerStats(playerData);
       }
 
       document.getElementById('loadingDiv').style.display = 'none';
-      document.getElementById('tableContainer').style.display = 'block';
+      document.getElementById('playerList').style.display = 'block';
     } catch (error) {
       console.error('Dashboard load error:', error);
       document.getElementById('loadingDiv').innerHTML =
@@ -449,50 +443,187 @@
     currentPeriod = period;
     document.querySelectorAll('.period-selector button:not(.ref-btn)').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('loadingDiv').style.display = 'block';
-    document.getElementById('tableContainer').style.display = 'none';
     loadDashboard();
   }
 
   // ===========================
-  // PLAYER TABLE
+  // PLAYER TABLE (Expandable Chest Types)
   // ===========================
-  function renderPlayerTable() {
-    const tbody = document.getElementById('playerTableBody');
-    tbody.innerHTML = '';
+  function displayPlayerStats(stats) {
+    const container = document.getElementById('playerList');
+    let playerArray = Array.isArray(stats) ? stats : [];
 
-    const sorted = [...playerData].sort((a, b) => {
-      let va = a[sortField] || 0, vb = b[sortField] || 0;
-      if (sortField === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
-      else if (sortField === 'points') { va = a.totalPoints; vb = b.totalPoints; }
-      else if (sortField === 'chests') { va = a.chestCount; vb = b.chestCount; }
-      if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
-      return sortAsc ? va - vb : vb - va;
+    if (playerArray.length === 0) {
+      container.innerHTML = '<div class="loading">No data found</div>';
+      return;
+    }
+
+    // Merge splits data into player stats
+    playerArray = playerArray.map(player => {
+      const playerName = player.name || player.player;
+      const splits = currentSplits[playerName];
+      if (splits) {
+        return {
+          ...player,
+          chestsByTypeGrouped: splits.chestsByTypeGrouped || {}
+        };
+      }
+      return player;
     });
 
-    sorted.forEach((player, index) => {
-      const progress = Math.min(100, (player.totalPoints / targetPoints) * 100);
-      const isAbove = player.totalPoints >= targetPoints;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="rank">${index + 1}</td>
-        <td>${escapeHtml(player.name)}</td>
-        <td class="points ${isAbove ? 'above-target' : 'below-target'}">${player.totalPoints.toLocaleString()}</td>
-        <td>${player.chestCount}</td>
-        <td>
-          <div class="progress-bar">
-            <div class="fill ${isAbove ? 'complete' : ''}" style="width: ${progress}%"></div>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
+    // Sort by total points descending
+    playerArray.sort((a, b) => (b.totalPoints || 0) - (a.totalPoints || 0));
+
+    // Collect all chest types and levels across all players
+    const typeData = {};
+    playerArray.forEach(player => {
+      if (player.chestsByTypeGrouped) {
+        Object.entries(player.chestsByTypeGrouped).forEach(([type, data]) => {
+          if (!typeData[type]) typeData[type] = { levels: new Set(), total: 0 };
+          if (data.levels) Object.keys(data.levels).forEach(level => typeData[type].levels.add(level));
+          typeData[type].total += data.total || 0;
+        });
+      }
+    });
+    const sortedTypes = Object.entries(typeData)
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([name, data]) => ({
+        name,
+        levels: Array.from(data.levels).map(l => parseInt(l)).sort((a, b) => a - b)
+      }));
+
+    // Build header
+    let headerHtml = '<div class="table-header">';
+    const sortIcon = () => '<span class="sort-icon" style="font-size:11px;vertical-align:middle;user-select:none;margin-left:2px;">▲▼</span>';
+    headerHtml += `<div class="header-cell rank-col sortable" data-sort="rank"># ${sortIcon()}</div>`;
+    headerHtml += `<div class="header-cell sortable" data-sort="player">Player ${sortIcon()}</div>`;
+    headerHtml += `<div class="header-cell sortable" data-sort="pts">Pts ${sortIcon()}</div>`;
+    headerHtml += `<div class="header-cell sortable" data-sort="total">Total ${sortIcon()}</div>`;
+    sortedTypes.forEach(type => {
+      headerHtml += `<div class="header-cell type-total-header${expandedTypes.has(type.name) ? ' expanded' : ''}" onclick="toggleType('${escapeHtml(type.name)}')" data-type="${escapeHtml(type.name)}"><span class="toggle-icon">▶</span>${escapeHtml(type.name)}</div>`;
+      type.levels.forEach(level => {
+        headerHtml += `<div class="header-cell level-header${expandedTypes.has(type.name) ? ' visible' : ''}" data-type="${escapeHtml(type.name)}" data-level="${level}">Lvl ${level}</div>`;
+      });
+    });
+    headerHtml += '</div>';
+
+    // Build rows
+    let rowsHtml = '';
+    playerArray.forEach((player, idx) => {
+      const playerName = player.name || player.player;
+      const totalPointsVal = player.totalPoints || 0;
+      const pointsClass = totalPointsVal >= targetPoints ? 'player-green' : (totalPointsVal >= targetPoints * 0.9 ? 'player-orange' : 'player-red');
+
+      let totalChests = player.chestCount || 0;
+      if (totalChests === 0 && player.chestsByTypeGrouped) {
+        Object.values(player.chestsByTypeGrouped).forEach(t => { totalChests += t.total || 0; });
+      }
+
+      rowsHtml += '<div class="player-row">';
+      rowsHtml += `<div class="cell rank-col">${idx + 1}</div>`;
+      rowsHtml += `<div class="cell ${pointsClass}">${escapeHtml(playerName)}</div>`;
+      rowsHtml += `<div class="cell">${totalPointsVal.toLocaleString()}</div>`;
+      rowsHtml += `<div class="cell">${totalChests || '-'}</div>`;
+
+      sortedTypes.forEach(type => {
+        const typeInfo = player.chestsByTypeGrouped?.[type.name];
+        const totalCount = typeInfo?.total || 0;
+        rowsHtml += `<div class="cell" data-type="${escapeHtml(type.name)}"><span class="${totalCount === 0 ? 'count-zero' : ''}">${totalCount || '-'}</span></div>`;
+        type.levels.forEach(level => {
+          const levelCount = typeInfo?.levels?.[level] || 0;
+          rowsHtml += `<div class="cell level-cell${expandedTypes.has(type.name) ? ' visible' : ''}" data-type="${escapeHtml(type.name)}" data-level="${level}"><span class="${levelCount === 0 ? 'count-zero' : ''}">${levelCount || '-'}</span></div>`;
+        });
+      });
+      rowsHtml += '</div>';
+    });
+
+    container.innerHTML = `<div class="chest-table" id="playerTable">${headerHtml}${rowsHtml}</div>`;
+    addPlayerTableSortHandlers();
+    filterPlayerTable();
+  }
+
+  function toggleType(typeName) {
+    const header = document.querySelector(`.type-total-header[data-type="${typeName}"]`);
+    const isExpanded = expandedTypes.has(typeName);
+    if (isExpanded) {
+      expandedTypes.delete(typeName);
+      header.classList.remove('expanded');
+    } else {
+      expandedTypes.add(typeName);
+      header.classList.add('expanded');
+    }
+    document.querySelectorAll(`[data-type="${typeName}"]`).forEach(el => {
+      if (el.classList.contains('level-header') || el.classList.contains('level-cell')) {
+        el.classList.toggle('visible');
+      }
     });
   }
 
-  function sortTable(field) {
-    if (sortField === field) { sortAsc = !sortAsc; }
-    else { sortField = field; sortAsc = false; }
-    renderPlayerTable();
+  // ===========================
+  // SORT & FILTER
+  // ===========================
+  function addPlayerTableSortHandlers() {
+    const table = document.getElementById('playerTable');
+    if (!table) return;
+    const headers = table.querySelectorAll('.header-cell.sortable');
+    headers.forEach(header => {
+      header.style.cursor = 'pointer';
+      header.onclick = function() {
+        const sortKey = header.getAttribute('data-sort');
+        let dir = header.getAttribute('data-dir') || 'desc';
+        dir = dir === 'desc' ? 'asc' : 'desc';
+        headers.forEach(h => h.removeAttribute('data-dir'));
+        header.setAttribute('data-dir', dir);
+        sortPlayerTable(sortKey, dir);
+        headers.forEach(h => {
+          const icon = h.querySelector('.sort-icon');
+          if (icon) icon.textContent = '▲▼';
+        });
+        const icon = header.querySelector('.sort-icon');
+        if (icon) icon.textContent = dir === 'asc' ? '▲' : '▼';
+      };
+    });
+  }
+
+  function sortPlayerTable(key, dir) {
+    const table = document.getElementById('playerTable');
+    if (!table) return;
+    const rows = Array.from(table.querySelectorAll('.player-row'));
+    let idx;
+    if (key === 'rank') idx = 0;
+    else if (key === 'player') idx = 1;
+    else if (key === 'pts') idx = 2;
+    else if (key === 'total') idx = 3;
+    else return;
+    rows.sort((a, b) => {
+      let va = a.querySelectorAll('.cell')[idx]?.textContent.trim();
+      let vb = b.querySelectorAll('.cell')[idx]?.textContent.trim();
+      if (key === 'rank' || key === 'pts' || key === 'total') {
+        va = parseInt(va.replace(/[^\d]/g, '')) || 0;
+        vb = parseInt(vb.replace(/[^\d]/g, '')) || 0;
+      } else {
+        va = va.toLowerCase();
+        vb = vb.toLowerCase();
+      }
+      if (va < vb) return dir === 'asc' ? -1 : 1;
+      if (va > vb) return dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    rows.forEach(row => table.appendChild(row));
+  }
+
+  function filterPlayerTable() {
+    const input = document.getElementById('playerFilterInput');
+    const filter = input ? input.value.trim().toLowerCase() : '';
+    const table = document.getElementById('playerTable');
+    if (!table) return;
+    const rows = table.querySelectorAll('.player-row');
+    rows.forEach(row => {
+      const nameCell = row.querySelector('.cell:nth-child(2)');
+      if (!nameCell) return;
+      const name = nameCell.textContent.trim().toLowerCase();
+      row.style.display = (!filter || name.includes(filter)) ? '' : 'none';
+    });
   }
 
   // ===========================
