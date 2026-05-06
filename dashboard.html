@@ -262,7 +262,7 @@
     <div class="table-container">
       <table class="chest-ref-table">
         <thead>
-          <tr><th>Type</th><th>Chest Name</th><th>Level</th><th>Points</th></tr>
+          <tr><th>Type</th><th>Level</th><th>Points</th></tr>
         </thead>
         <tbody id="chestRefBody"></tbody>
       </table>
@@ -527,8 +527,7 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${escapeHtml(chest.type)}</td>
-        <td>${escapeHtml(chest.name)}</td>
-        <td>${escapeHtml(chest.level)}</td>
+        <td>${escapeHtml(String(chest.level))}</td>
         <td style="font-weight:600; color: var(--primary)">${chest.points}</td>
       `;
       tbody.appendChild(tr);
@@ -539,7 +538,6 @@
     const query = document.getElementById('chestRefSearch').value.toLowerCase();
     const filtered = chestRefData.filter(c =>
       c.type.toLowerCase().includes(query) ||
-      c.name.toLowerCase().includes(query) ||
       String(c.level).toLowerCase().includes(query)
     );
     renderChestRef(filtered);
