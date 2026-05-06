@@ -10,19 +10,19 @@
   <script src="portal-shim.js"></script>
   <style>
     :root {
-      --primary: #ffb300;
-      --bg-dark: #232526;
-      --bg-card: rgba(30, 34, 40, 0.95);
-      --text: #f3f3f3;
-      --text-muted: #aaa;
-      --success: #4CAF50;
-      --danger: #e74c3c;
-      --border: #444;
+      --primary: #5a7d9a;
+      --bg-dark: #f0f2f5;
+      --bg-card: rgba(255, 255, 255, 0.97);
+      --text: #2d3436;
+      --text-muted: #636e72;
+      --success: #27ae60;
+      --danger: #c0392b;
+      --border: #dcdde1;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      background: linear-gradient(135deg, #dfe6e9 0%, #f0f2f5 100%);
       color: var(--text);
       min-height: 100vh;
       background-attachment: fixed;
@@ -33,7 +33,8 @@
     .tab-nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
       display: flex; justify-content: center; gap: 0;
-      background: #1a1d21; border-bottom: 2px solid var(--primary);
+      background: #ffffff; border-bottom: 2px solid var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       padding: 0;
     }
     .tab-nav a {
@@ -51,17 +52,17 @@
     }
     .login-bar .user-email { font-size: 0.8em; color: var(--primary); }
     .login-bar button {
-      background: var(--primary); color: #000; border: none; border-radius: 6px;
+      background: var(--primary); color: #fff; border: none; border-radius: 6px;
       padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 0.85em;
     }
-    .login-bar button:hover { background: #ffc107; }
-    .login-bar .logout-btn { background: #555; color: #fff; }
+    .login-bar button:hover { background: #4a6d8a; }
+    .login-bar .logout-btn { background: #b2bec3; color: #2d3436; }
 
     /* Container */
     .container {
       max-width: 1200px; margin: 0 auto;
       background: var(--bg-card); border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
       padding: 24px 16px;
     }
 
@@ -73,10 +74,10 @@
       display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
     }
     .period-selector button {
-      background: #333; color: var(--text); border: 1px solid var(--border);
+      background: #e8ecef; color: var(--text); border: 1px solid var(--border);
       border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.9em;
     }
-    .period-selector button.active { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
+    .period-selector button.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
 
     /* Stats Cards */
     .stats-row {
@@ -84,15 +85,17 @@
       gap: 12px; margin-bottom: 20px;
     }
     .stat-card {
-      background: #2a2d32; border-radius: 12px; padding: 16px; text-align: center;
+      background: #f7f8fa; border-radius: 12px; padding: 16px; text-align: center;
+      border: 1px solid var(--border);
     }
     .stat-card .stat-value { font-size: 1.8em; font-weight: 700; color: var(--primary); }
     .stat-card .stat-label { font-size: 0.8em; color: var(--text-muted); margin-top: 4px; }
 
     /* Period Info */
     .period-info {
-      text-align: center; padding: 8px; background: #2a2d32; border-radius: 8px;
+      text-align: center; padding: 8px; background: #f7f8fa; border-radius: 8px;
       margin-bottom: 16px; font-size: 0.85em; color: var(--text-muted);
+      border: 1px solid var(--border);
     }
     .period-info .period-name { color: var(--primary); font-weight: 600; }
 
@@ -102,13 +105,13 @@
       width: 100%; border-collapse: collapse; font-size: 0.9em;
     }
     th {
-      background: #333; color: var(--primary); padding: 10px 8px;
+      background: #e8ecef; color: var(--primary); padding: 10px 8px;
       text-align: left; position: sticky; top: 0; cursor: pointer;
       border-bottom: 2px solid var(--primary);
     }
-    th:hover { background: #444; }
-    td { padding: 8px; border-bottom: 1px solid #333; }
-    tr:hover { background: rgba(255, 179, 0, 0.05); }
+    th:hover { background: #d5dadf; }
+    td { padding: 8px; border-bottom: 1px solid #eee; }
+    tr:hover { background: rgba(90,125,154,0.05); }
     .rank { font-weight: 700; color: var(--primary); width: 40px; }
     .points { font-weight: 600; }
     .points.above-target { color: var(--success); }
@@ -116,7 +119,7 @@
 
     /* Progress Bar */
     .progress-bar {
-      width: 100%; height: 6px; background: #444; border-radius: 3px; overflow: hidden;
+      width: 100%; height: 6px; background: #dcdde1; border-radius: 3px; overflow: hidden;
     }
     .progress-bar .fill {
       height: 100%; background: var(--primary); border-radius: 3px;
@@ -127,13 +130,13 @@
     /* Chest Points Reference Popup */
     .modal-overlay {
       display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center;
+      background: rgba(0,0,0,0.3); z-index: 2000; justify-content: center; align-items: center;
     }
     .modal-overlay.active { display: flex; }
     .modal {
-      background: #2a2d32; border-radius: 16px; padding: 24px;
+      background: #ffffff; border-radius: 16px; padding: 24px;
       max-width: 800px; width: 95%; max-height: 85vh; overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
     }
     .modal h2 { color: var(--primary); margin-bottom: 12px; }
     .modal .close-btn {
@@ -142,20 +145,21 @@
     }
     .modal .close-btn:hover { color: var(--primary); }
     .modal input[type="text"] {
-      width: 100%; padding: 10px; background: #1a1d21; border: 1px solid var(--border);
+      width: 100%; padding: 10px; background: #fff; border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); font-size: 0.9em; margin-bottom: 12px;
     }
+    .modal input[type="text"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(90,125,154,0.15); }
     .chest-ref-table { font-size: 0.85em; }
-    .chest-ref-table th { background: #1a1d21; font-size: 0.85em; }
+    .chest-ref-table th { background: #f7f8fa; font-size: 0.85em; }
     .chest-ref-table td { padding: 6px 8px; }
 
     /* Chest Points Ref Button */
     .ref-btn {
-      background: #333; color: var(--primary); border: 1px solid var(--primary);
+      background: #e8ecef; color: var(--primary); border: 1px solid var(--primary);
       border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.85em;
       display: inline-flex; align-items: center; gap: 6px;
     }
-    .ref-btn:hover { background: var(--primary); color: #000; }
+    .ref-btn:hover { background: var(--primary); color: #fff; }
 
     /* Loading */
     .loading { text-align: center; padding: 40px; color: var(--text-muted); }
@@ -169,9 +173,9 @@
     /* Toast */
     .toast {
       position: fixed; bottom: 20px; right: 20px; z-index: 3000;
-      background: #333; color: var(--text); padding: 12px 20px;
+      background: #fff; color: var(--text); padding: 12px 20px;
       border-radius: 8px; font-size: 0.9em; display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
     }
     .toast.success { border-left: 4px solid var(--success); }
     .toast.error { border-left: 4px solid var(--danger); }
