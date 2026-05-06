@@ -32,6 +32,7 @@
     }
     .tab-nav a:hover { color: var(--primary); }
     .tab-nav a.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .nav-icon { width: 18px; height: 18px; vertical-align: middle; margin-right: 4px; }
     .login-bar {
       position: fixed; top: 0; right: 8px; z-index: 1001;
       display: flex; align-items: center; gap: 8px; padding: 8px;
@@ -149,10 +150,10 @@
 <body>
 
 <nav class="tab-nav">
-  <a href="dashboard.html">📊 Dashboard</a>
-  <a href="events.html" id="navEvents" style="display:none">🎉 Events</a>
-  <a href="members.html" id="navMembers" style="display:none">👥 Members</a>
-  <a href="calendar.html" class="active">📅 Calendar</a>
+  <a href="dashboard.html"><img src="chest.png" class="nav-icon" alt=""> Dashboard</a>
+  <a href="events.html" id="navEvents" style="display:none"><img src="events.png" class="nav-icon" alt=""> Events</a>
+  <a href="members.html" id="navMembers" style="display:none"><img src="members.png" class="nav-icon" alt=""> Members</a>
+  <a href="calendar.html" class="active"><img src="calendar.png" class="nav-icon" alt=""> Calendar</a>
 </nav>
 
 <div class="login-bar">
