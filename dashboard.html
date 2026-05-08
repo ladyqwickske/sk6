@@ -10,19 +10,22 @@
   <script src="portal-shim.js"></script>
   <style>
     :root {
-      --primary: #5a7d9a;
-      --bg-dark: #f0f2f5;
-      --bg-card: rgba(255, 255, 255, 0.97);
-      --text: #2d3436;
-      --text-muted: #636e72;
+      --primary: #1a7a6d;
+      --primary-hover: #156b60;
+      --accent: #c8a415;
+      --accent-light: #e6d06c;
+      --bg-dark: #f5f0e4;
+      --bg-card: rgba(255, 252, 245, 0.97);
+      --text: #2d2418;
+      --text-muted: #6b5d4e;
       --success: #27ae60;
       --danger: #c0392b;
-      --border: #dcdde1;
+      --border: #d4c9b5;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(135deg, #dfe6e9 0%, #f0f2f5 100%);
+      background: linear-gradient(135deg, #e8dfd0 0%, #f5f0e4 100%);
       color: var(--text);
       min-height: 100vh;
       background-attachment: fixed;
@@ -33,7 +36,7 @@
     .tab-nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
       display: flex; justify-content: center; gap: 0;
-      background: #ffffff; border-bottom: 2px solid var(--primary);
+      background: #fffcf5; border-bottom: 2px solid var(--accent);
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
       padding: 0;
     }
@@ -56,8 +59,8 @@
       background: var(--primary); color: #fff; border: none; border-radius: 6px;
       padding: 6px 14px; cursor: pointer; font-weight: 600; font-size: 0.85em;
     }
-    .login-bar button:hover { background: #4a6d8a; }
-    .login-bar .logout-btn { background: #b2bec3; color: #2d3436; }
+    .login-bar button:hover { background: var(--primary-hover); }
+    .login-bar .logout-btn { background: #c4b99a; color: var(--text); }
 
     /* Container */
     .container {
@@ -77,7 +80,7 @@
       display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
     }
     .period-selector button {
-      background: #e8ecef; color: var(--text); border: 1px solid var(--border);
+      background: #ede5d5; color: var(--text); border: 1px solid var(--border);
       border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.9em;
     }
     .period-selector button.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
@@ -88,7 +91,7 @@
       gap: 12px; margin-bottom: 20px;
     }
     .stat-card {
-      background: #f7f8fa; border-radius: 12px; padding: 16px; text-align: center;
+      background: #f8f4ea; border-radius: 12px; padding: 16px; text-align: center;
       border: 1px solid var(--border);
     }
     .stat-card .stat-value { font-size: 1.8em; font-weight: 700; color: var(--primary); }
@@ -96,7 +99,7 @@
 
     /* Period Info */
     .period-info {
-      text-align: center; padding: 8px; background: #f7f8fa; border-radius: 8px;
+      text-align: center; padding: 8px; background: #f8f4ea; border-radius: 8px;
       margin-bottom: 16px; font-size: 0.85em; color: var(--text-muted);
       border: 1px solid var(--border);
     }
@@ -105,25 +108,25 @@
     /* Player Table - Expandable Chest Type Layout */
     .player-list { background: #fff; border-radius: 8px; padding: 0; box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: auto; max-height: 70vh; border: 1px solid var(--border); position: relative; }
     .chest-table { display: table; width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; }
-    .table-header { display: table-row; background: #e8ecef; border-bottom: 2px solid var(--primary); }
-    .header-cell { display: table-cell; padding: 10px 8px; font-weight: 600; font-size: 11px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; border-right: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; background: #e8ecef; z-index: 2; }
+    .table-header { display: table-row; background: #ede5d5; border-bottom: 2px solid var(--accent); }
+    .header-cell { display: table-cell; padding: 10px 8px; font-weight: 600; font-size: 11px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; border-right: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; background: #ede5d5; z-index: 2; }
     .header-cell:first-child { text-align: center; position: sticky; left: 0; z-index: 3; min-width: 45px; max-width: 50px; width: 50px; }
     .header-cell:nth-child(2) { text-align: left; position: sticky; left: 50px; z-index: 3; min-width: 150px; }
     .header-cell.rank-col { min-width: 45px !important; max-width: 50px !important; width: 50px !important; padding: 10px 4px; text-align: center !important; }
     .cell.rank-col { min-width: 45px !important; max-width: 50px !important; width: 50px !important; padding: 10px 4px; text-align: center !important; }
-    .type-total-header { cursor: pointer; user-select: none; background: #f0f2f5; font-weight: 600; color: var(--primary); }
-    .type-total-header:hover { background: #d5dadf; }
+    .type-total-header { cursor: pointer; user-select: none; background: #f5f0e4; font-weight: 600; color: var(--primary); }
+    .type-total-header:hover { background: #ddd5c5; }
     .toggle-icon { display: inline-block; width: 16px; text-align: center; margin-right: 4px; transition: transform 0.15s; }
     .type-total-header.expanded .toggle-icon { transform: rotate(90deg); }
-    .level-header { background: #f7f8fa; display: none; color: var(--primary); }
+    .level-header { background: #f8f4ea; display: none; color: var(--primary); }
     .level-header.visible { display: table-cell; }
     .player-row { display: table-row; border-bottom: 1px solid #eee; background: #fff; }
-    .player-row:hover { background: rgba(90,125,154,0.05); }
+    .player-row:hover { background: rgba(26,122,109,0.05); }
     .cell { display: table-cell; padding: 10px 8px; border-right: 1px solid #eee; text-align: center; font-size: 13px; vertical-align: middle; white-space: nowrap; color: var(--text); background: #fff; }
     .cell:first-child { text-align: center; font-weight: 600; color: var(--primary); position: sticky; left: 0; background: #fff; z-index: 1; min-width: 45px; max-width: 50px; width: 50px; }
     .cell:nth-child(2) { text-align: left; font-weight: 500; position: sticky; left: 50px; background: #fff; z-index: 1; min-width: 150px; }
-    .player-row:hover .cell:first-child, .player-row:hover .cell:nth-child(2) { background: rgba(90,125,154,0.05); }
-    .level-cell { background: #f7f8fa; display: none; font-size: 12px; color: var(--primary); }
+    .player-row:hover .cell:first-child, .player-row:hover .cell:nth-child(2) { background: rgba(26,122,109,0.05); }
+    .level-cell { background: #f8f4ea; display: none; font-size: 12px; color: var(--primary); }
     .level-cell.visible { display: table-cell; }
     .count-zero { color: #ccc; }
     .player-red { color: var(--danger); font-weight: 500; }
@@ -152,14 +155,14 @@
       width: 100%; padding: 10px; background: #fff; border: 1px solid var(--border);
       border-radius: 8px; color: var(--text); font-size: 0.9em; margin-bottom: 12px;
     }
-    .modal input[type="text"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(90,125,154,0.15); }
+    .modal input[type="text"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,122,109,0.15); }
     .chest-ref-table { font-size: 0.85em; }
-    .chest-ref-table th { background: #f7f8fa; font-size: 0.85em; }
+    .chest-ref-table th { background: #f8f4ea; font-size: 0.85em; }
     .chest-ref-table td { padding: 6px 8px; }
 
     /* Chest Points Ref Button */
     .ref-btn {
-      background: #e8ecef; color: var(--primary); border: 1px solid var(--primary);
+      background: #ede5d5; color: var(--primary); border: 1px solid var(--primary);
       border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 0.85em;
       display: inline-flex; align-items: center; gap: 6px;
     }
@@ -410,7 +413,7 @@
         targetPoints = periodResult.targetPoints || 3000;
         document.getElementById('periodName').textContent = periodResult.source || 'Current Period';
         document.getElementById('periodDates').textContent =
-          ` (${periodResult.start || '?'} → ${periodResult.end || '?'})`;
+          ` (${formatPeriodDate(periodResult.start)} → ${formatPeriodDate(periodResult.end)})`;
       }
 
       // Update stats
@@ -683,6 +686,13 @@
   // ===========================
   // UTILITIES
   // ===========================
+  function formatPeriodDate(dateStr) {
+    if (!dateStr) return '?';
+    const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00Z');
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  }
+
   function escapeHtml(str) {
     if (!str) return '';
     const div = document.createElement('div');
