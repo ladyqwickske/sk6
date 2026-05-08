@@ -230,8 +230,7 @@
   <div class="period-info" id="periodInfo">
     <span class="period-name" id="periodName">Loading...</span>
     <span id="periodDates"></span>
-    <div class="last-updated" id="lastUpdated">Last Updated: Never</div>
-    <div class="last-updated" id="lastImportedDisplay" style="font-size: 12px; color: #ffb300; margin-top: 4px;">Last Imported: <span class="no-date">Loading...</span></div>
+    <div class="last-updated" id="lastImportedDisplay">Last Imported: <span class="no-date">Loading...</span></div>
   </div>
 
   <!-- Stats Row -->
@@ -470,7 +469,6 @@
         document.getElementById('statPoints').textContent = (statsResult.totalPoints || 0).toLocaleString();
         document.getElementById('statPlayers').textContent = statsResult.uniquePlayers || 0;
         document.getElementById('statTop').textContent = statsResult.topPlayer || '-';
-        document.getElementById('lastUpdated').textContent = 'Last Updated: ' + (statsResult.lastUpdated || 'Never');
         updateLastImportedDisplay(statsResult.lastImported || null);
       }
 
