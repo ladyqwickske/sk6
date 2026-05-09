@@ -355,7 +355,10 @@
     try {
       const result = await callFunction('removeMember', [name]);
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
-      if (result?.success) loadMembers();
+      if (result?.success) {
+        membersData = membersData.filter(m => m.name !== name);
+        renderTable();
+      }
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 
@@ -365,7 +368,11 @@
     try {
       const result = await callFunction('updateMemberName', [oldName, newName]);
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
-      if (result?.success) loadMembers();
+      if (result?.success) {
+        const member = membersData.find(m => m.name === oldName);
+        if (member) member.name = newName;
+        renderTable();
+      }
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 

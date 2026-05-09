@@ -449,9 +449,9 @@
 
       const [periodResult, statsResult, playerResult, splitsResult] = await Promise.all([
         callFunction(currentPeriod === 'active' ? 'getActivePeriodDates' : 'getPreviousPeriodDates'),
-        callFunction('getStatsSummary', []),
-        callFunction('getPlayerStats', []),
-        callFunction('getSplits', [])
+        callFunction('getStatsSummary', [currentPeriod]),
+        callFunction('getPlayerStats', [currentPeriod]),
+        callFunction('getSplits', [currentPeriod])
       ]);
 
       // Update period info
