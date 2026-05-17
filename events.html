@@ -258,6 +258,18 @@
       <button class="btn" onclick="calculateParticipation()">🔄 Recalculate</button>
       <button class="btn secondary" onclick="fillNonParticipants()">Fill Non-Participants</button>
     </div>
+    <!-- Manual Entry Form (shown for manual-entry events) -->
+    <div id="manualEntryForm" style="display:none; margin: 12px 0; padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px;">
+      <h4 style="color: var(--primary); margin-bottom: 8px;">✏️ Add Manual Entry</h4>
+      <div class="form-row">
+        <select id="manualMember" style="flex:1; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
+          <option value="">Select member...</option>
+        </select>
+        <input type="number" id="manualPoints" placeholder="Points" style="flex:0.5; min-width:80px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;" onkeypress="if(event.key==='Enter') saveManualEntry()">
+        <button class="btn" onclick="saveManualEntry()">💾 Save</button>
+      </div>
+      <div id="manualEntryStatus" style="font-size:0.85em; margin-top:6px;"></div>
+    </div>
     <div class="table-container">
       <table>
         <thead><tr id="participationHeaders"></tr></thead>
@@ -278,6 +290,7 @@
   let editingEvent = null;
   let editingType = null;
   let selectedEvent = null;
+  let membersData = [];
 
   document.addEventListener('DOMContentLoaded', () => {
     checkLoginState();
@@ -287,6 +300,7 @@
       document.getElementById('mainContent').style.display = 'block';
       loadEvents();
       loadEventTypes();
+      loadMembers();
     }
   });
 
@@ -341,6 +355,7 @@
       document.getElementById('participationActions').style.display = 'flex';
       if (eventsData.length === 0) loadEvents();
       if (eventTypesData.length === 0) loadEventTypes();
+      if (membersData.length === 0) loadMembers();
       if (eventsData.length > 0) renderEvents();
       if (eventTypesData.length > 0) renderEventTypes();
     }
@@ -595,6 +610,14 @@
     document.getElementById('participationSection').style.display = 'block';
     document.getElementById('participationTitle').textContent = `📊 ${ev.eventName} — Participation`;
 
+    // Show manual entry form for manual-entry events when logged in
+    const manualForm = document.getElementById('manualEntryForm');
+    if (manualForm) {
+      manualForm.style.display = (ev.participationMethod === 'manual-entry' && isLoggedIn) ? 'block' : 'none';
+      document.getElementById('manualEntryStatus').textContent = '';
+      if (membersData.length === 0 && isLoggedIn) loadMembers();
+    }
+
     if (ev.participationMethod === 'period-marker') {
       document.getElementById('participationBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Period markers don\'t track participation</td></tr>';
       document.getElementById('participationHeaders').innerHTML = '';
@@ -632,6 +655,46 @@
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
       if (result?.success) showParticipation(selectedEvent);
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // MEMBERS
+  async function loadMembers() {
+    try {
+      const result = await callFunction('getMembersList');
+      const list = result?.members || result?.data || result || [];
+      membersData = Array.isArray(list) ? list : [];
+      populateMemberSelect();
+    } catch (err) { console.error('Failed to load members:', err); membersData = []; }
+  }
+
+  function populateMemberSelect() {
+    const select = document.getElementById('manualMember');
+    if (!select) return;
+    const sorted = [...membersData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    select.innerHTML = '<option value="">Select member...</option>' +
+      sorted.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('');
+  }
+
+  // MANUAL ENTRY
+  async function saveManualEntry() {
+    const status = document.getElementById('manualEntryStatus');
+    status.textContent = '';
+    if (!selectedEvent) { status.textContent = 'No event selected.'; status.style.color = 'var(--danger)'; return; }
+    const memberName = document.getElementById('manualMember').value;
+    const points = parseInt(document.getElementById('manualPoints').value) || 0;
+    if (!memberName) { status.textContent = 'Please select a member.'; status.style.color = 'var(--danger)'; return; }
+    status.textContent = 'Saving...'; status.style.color = 'var(--text-muted)';
+    try {
+      const result = await callFunction('recordManualParticipation', [selectedEvent.eventName, memberName, points, '']);
+      if (result?.success) {
+        status.textContent = result.message || 'Saved!'; status.style.color = 'var(--success)';
+        document.getElementById('manualPoints').value = '';
+        document.getElementById('manualMember').value = '';
+        showParticipation(selectedEvent);
+      } else {
+        status.textContent = result?.message || 'Failed to save.'; status.style.color = 'var(--danger)';
+      }
+    } catch (err) { status.textContent = 'Error: ' + err.message; status.style.color = 'var(--danger)'; }
   }
 
   // UTILITIES
