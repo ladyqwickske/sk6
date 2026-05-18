@@ -351,7 +351,7 @@
   }
 
   async function removeMember(name) {
-    if (!confirm(`Remove "${name}" permanently?`)) return;
+    if (!confirm(`Remove "${name}" and archive to Former Members?`)) return;
     try {
       const result = await callFunction('removeMember', [name]);
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
