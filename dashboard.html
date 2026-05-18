@@ -238,8 +238,8 @@
     <div class="stat-card"><div class="stat-value" id="statChests">-</div><div class="stat-label">Chests</div></div>
     <div class="stat-card"><div class="stat-value" id="statPoints">-</div><div class="stat-label">Total Points</div></div>
     <div class="stat-card"><div class="stat-value" id="statRequired">-</div><div class="stat-label">Required Points</div></div>
-    <div class="stat-card"><div class="stat-value" id="statPlayers">-</div><div class="stat-label">Players</div></div>
-    <div class="stat-card"><div class="stat-value" id="statTop">-</div><div class="stat-label">Top Player</div></div>
+    <div class="stat-card"><div class="stat-value" id="statTotalMembers">-</div><div class="stat-label">Total Members</div></div>
+    <div class="stat-card"><div class="stat-value" id="statActiveMembers">-</div><div class="stat-label">Active Members</div></div>
   </div>
   <div class="color-legend" style="text-align:center;margin-bottom:16px;font-size:0.82em;color:var(--text-muted);">
     <span style="color:var(--success);font-weight:600;">&#9632;</span> ≥ Required &nbsp;
@@ -474,8 +474,8 @@
         document.getElementById('statChests').textContent = (statsResult.totalChests || 0).toLocaleString();
         document.getElementById('statPoints').textContent = (statsResult.totalPoints || 0).toLocaleString();
         document.getElementById('statRequired').textContent = targetPoints.toLocaleString();
-        document.getElementById('statPlayers').textContent = statsResult.uniquePlayers || 0;
-        document.getElementById('statTop').textContent = statsResult.topPlayer || '-';
+        document.getElementById('statTotalMembers').textContent = statsResult.totalMembers || 0;
+        document.getElementById('statActiveMembers').textContent = statsResult.activeMembers || 0;
         updateLastImportedDisplay(statsResult.lastImported || null);
       }
 
