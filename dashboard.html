@@ -572,14 +572,31 @@
       const totalPointsVal = player.totalPoints || 0;
       const pointsClass = totalPointsVal >= targetPoints ? 'player-green' : (totalPointsVal >= targetPoints * 0.9 ? 'player-orange' : 'player-red');
 
+      // Check if member joined after the current viewing period start
+      let isNewMember = false;
+      let joinDateLabel = '';
+      if (player.joinDate && currentPeriodDates && currentPeriodDates.start) {
+        const joinDate = new Date(player.joinDate);
+        const viewStartDate = new Date(currentPeriodDates.start);
+        isNewMember = joinDate > viewStartDate;
+        if (isNewMember) {
+          const today = new Date();
+          const timeDiff = today - joinDate;
+          const daysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+          const daysLabel = daysAgo === 0 ? 'today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
+          joinDateLabel = ` <span style="font-size:10px;opacity:0.8;">(Joined: ${daysLabel})</span>`;
+        }
+      }
+
       let totalChests = player.chestCount || 0;
       if (totalChests === 0 && player.chestsByTypeGrouped) {
         Object.values(player.chestsByTypeGrouped).forEach(t => { totalChests += t.total || 0; });
       }
 
-      rowsHtml += '<div class="player-row">';
+      const rowClass = isNewMember ? 'player-row new-member-row' : 'player-row';
+      rowsHtml += `<div class="${rowClass}">`;
       rowsHtml += `<div class="cell rank-col">${idx + 1}</div>`;
-      rowsHtml += `<div class="cell ${pointsClass}">${escapeHtml(playerName)}</div>`;
+      rowsHtml += `<div class="cell ${pointsClass}">${escapeHtml(playerName)}${joinDateLabel}</div>`;
       rowsHtml += `<div class="cell">${totalPointsVal.toLocaleString()}</div>`;
       rowsHtml += `<div class="cell">${totalChests || '-'}</div>`;
 
