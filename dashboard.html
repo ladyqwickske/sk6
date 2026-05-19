@@ -576,13 +576,16 @@
       let isNewMember = false;
       let joinDateLabel = '';
       if (player.joinDate && currentPeriodDates && currentPeriodDates.start) {
-        const joinDate = new Date(player.joinDate + 'T00:00:00Z');
+        console.log('[DEBUG joinDate]', player.name, 'raw joinDate:', JSON.stringify(player.joinDate), 'periodStart:', currentPeriodDates.start);
+        const joinDateStr = String(player.joinDate).substring(0, 10); // force YYYY-MM-DD only
+        const joinDate = new Date(joinDateStr + 'T00:00:00Z');
         const viewStartDate = new Date(currentPeriodDates.start + 'T00:00:00Z');
         isNewMember = joinDate > viewStartDate;
         if (isNewMember) {
           const now = new Date();
           const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
           const daysAgo = Math.floor((todayUtc - joinDate.getTime()) / (1000 * 60 * 60 * 24));
+          console.log('[DEBUG joinDate]', player.name, 'joinDate parsed:', joinDate.toISOString(), 'todayUtc:', new Date(todayUtc).toISOString(), 'daysAgo:', daysAgo);
           const daysLabel = daysAgo <= 0 ? 'today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
           joinDateLabel = ` <span style="font-size:10px;opacity:0.8;">(Joined: ${daysLabel})</span>`;
         }
