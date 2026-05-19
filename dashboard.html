@@ -576,14 +576,14 @@
       let isNewMember = false;
       let joinDateLabel = '';
       if (player.joinDate && currentPeriodDates && currentPeriodDates.start) {
-        const joinDate = new Date(player.joinDate);
-        const viewStartDate = new Date(currentPeriodDates.start);
+        const joinDate = new Date(player.joinDate + 'T00:00:00Z');
+        const viewStartDate = new Date(currentPeriodDates.start + 'T00:00:00Z');
         isNewMember = joinDate > viewStartDate;
         if (isNewMember) {
-          const today = new Date();
-          const timeDiff = today - joinDate;
-          const daysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-          const daysLabel = daysAgo === 0 ? 'today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
+          const now = new Date();
+          const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+          const daysAgo = Math.floor((todayUtc - joinDate.getTime()) / (1000 * 60 * 60 * 24));
+          const daysLabel = daysAgo <= 0 ? 'today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`;
           joinDateLabel = ` <span style="font-size:10px;opacity:0.8;">(Joined: ${daysLabel})</span>`;
         }
       }
