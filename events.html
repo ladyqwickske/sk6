@@ -186,6 +186,40 @@
       <button class="btn" onclick="saveEvent()">Save Event</button>
       <button class="btn secondary" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">Cancel</button>
     </div>
+
+    <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+    <h3 style="color:var(--primary); margin-bottom:8px;">📅 Generate Upcoming Events from Calendar</h3>
+    <p style="margin-bottom:10px; color:var(--text-muted); font-size:0.85em;">Automatically create events based on the recurring calendar schedule.</p>
+    <div class="form-row" style="align-items:center;">
+      <button class="btn" id="generateEventsBtn" onclick="generateCalendarEvents()" style="background:var(--success); color:#fff;">📅 Generate Events</button>
+      <select id="generateDaysSelect" style="flex:0.5; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
+        <option value="7">Next 7 days</option>
+        <option value="14">Next 14 days</option>
+        <option value="30" selected>Next 30 days</option>
+        <option value="60">Next 60 days</option>
+      </select>
+    </div>
+    <div style="margin:8px 0; padding:8px 12px; background:#f8f4ea; border-radius:8px; border:1px solid var(--border);">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <span style="font-size:0.85em; color:var(--text-muted); font-weight:600;">Generate for:</span>
+        <label style="font-size:0.8em; color:var(--text-muted); cursor:pointer;"><input type="checkbox" id="genSelectAll" checked onchange="document.querySelectorAll('.gen-type-cb').forEach(cb=>cb.checked=this.checked)"> All</label>
+      </div>
+      <div id="genEventTypes" style="display:flex; flex-wrap:wrap; gap:4px 12px;">
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Doomsday" checked> Doomsday</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Arachne's Swarm" checked> Arachne's Swarm</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Ruthless Slaughter" checked> Ruthless Slaughter</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Active Period" checked> Active Period</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Ancients" checked> Ancients</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="The Great Hunt" checked> The Great Hunt</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="KvK" checked> KvK</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="CoT" checked> CoT</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Armageddon" checked> Armageddon</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Shadow Invasion" checked> Shadow Invasion</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="HellForge" checked> HellForge</label>
+        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Ragnarok" checked> Ragnarok</label>
+      </div>
+    </div>
+    <div id="generateStatus" style="font-size:0.85em; margin-top:6px;"></div>
   </div>
 
   <!-- Events List -->
@@ -695,6 +729,44 @@
         status.textContent = result?.message || 'Failed to save.'; status.style.color = 'var(--danger)';
       }
     } catch (err) { status.textContent = 'Error: ' + err.message; status.style.color = 'var(--danger)'; }
+  }
+
+  // GENERATE EVENTS FROM CALENDAR
+  async function generateCalendarEvents() {
+    const btn = document.getElementById('generateEventsBtn');
+    const status = document.getElementById('generateStatus');
+    const daysAhead = Number(document.getElementById('generateDaysSelect').value);
+    const selectedTypes = Array.from(document.querySelectorAll('.gen-type-cb:checked')).map(cb => cb.value);
+    if (selectedTypes.length === 0) {
+      status.innerHTML = '⚠️ Please select at least one event type.';
+      status.style.color = 'var(--accent)';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = '⏳ Generating...';
+    status.innerHTML = '';
+    try {
+      const result = await callFunction('generateCalendarEvents', [daysAhead, selectedTypes]);
+      btn.disabled = false;
+      btn.textContent = '📅 Generate Events';
+      if (result && result.success) {
+        const parts = [];
+        if (result.created && result.created.length > 0) parts.push('✅ Created ' + result.created.length + ': ' + result.created.join(', '));
+        if (result.skipped && result.skipped.length > 0) parts.push('⏭️ Skipped ' + result.skipped.length + ' existing');
+        if (result.errors && result.errors.length > 0) parts.push('❌ ' + result.errors.length + ' error(s)');
+        status.innerHTML = parts.join('<br>') || 'No events to generate in this range.';
+        status.style.color = (result.errors && result.errors.length > 0) ? 'var(--danger)' : 'var(--success)';
+        loadEvents();
+      } else {
+        status.innerHTML = '❌ ' + (result?.message || 'Generation failed.');
+        status.style.color = 'var(--danger)';
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = '📅 Generate Events';
+      status.innerHTML = '❌ Error: ' + err.message;
+      status.style.color = 'var(--danger)';
+    }
   }
 
   // UTILITIES

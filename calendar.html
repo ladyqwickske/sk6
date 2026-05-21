@@ -216,10 +216,61 @@
 
   const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+  // ── Recurring event definitions ──────────────────────────────
+  // Edit firstStart, duration (days), and interval (days) as needed
+  const RECURRING = [
+    { title: 'Doomsday',          firstStart: '2026-05-20', duration: 1, interval: 5,  color: 'chest-based', category: 'Daily Event', description: 'Doomsday — recurring every 6 days.' },
+    { title: 'Arachne\'s Swarm',  firstStart: '2026-05-21', duration: 1, interval: 5,  color: 'manual-entry', category: 'Daily Event', description: 'Arachne\'s Swarm — recurring every 6 days.' },
+    { title: 'Ruthless Slaughter',firstStart: '2026-05-24', duration: 1, interval: 5,  color: 'manual-entry', category: 'Daily Event', description: 'Ruthless Slaughter — recurring every 6 days.' },
+    { title: 'Active Period',     firstStart: '2026-05-14', duration: 6, interval: 5,  color: 'period-marker', category: 'Crypting', description: 'Crypting period.' },
+    { title: 'Ancients',          firstStart: '2026-05-20', duration: 1, interval: 5,  color: 'chest-based', category: 'Daily Event', description: 'Ancients — 2-day event.' },
+    { title: 'The Great Hunt',    firstStart: '2026-05-19', duration: 1, interval: 5,  color: 'chest-based', category: 'Daily Event', description: 'The Great Hunt — recurring every 6 days.' },
+    { title: 'KvK',               firstStart: '2026-05-24', duration: 1, interval: 5, color: 'manual-entry', category: 'Major Event', description: 'Kingdom vs Kingdom — recurring every 24 days.' },
+    { title: 'CoT',               firstStart: '2026-05-10', duration: 1, interval: 5, color: 'chest-based', category: 'Major Event', description: 'Clash for the Throne — 2-day event every 12 days.' },
+    { title: 'Armageddon',        firstStart: '2026-05-21', duration: 1, interval: 5, color: 'period-marker', category: 'Major Event', description: 'Armageddon — 2-day event every 24 days.' },
+    { title: 'Shadow Invasion',   firstStart: '2026-05-23', duration: 1, interval: 5, color: 'chest-based', category: 'Major Event', description: 'Shadow Invasion — 2-day event every 24 days.' },
+    { title: 'HellForge',         firstStart: '2026-05-20', duration: 1, interval: 5, color: 'period-marker', category: 'Major Event', description: 'HellForge — 2-day event every 24 days.' },
+    { title: 'Ragnarok',          firstStart: '2026-05-22', duration: 1, interval: 5, color: 'manual-entry', category: 'Major Event', description: 'Ragnarok — 2-day event every 24 days.' },
+  ];
+
+  function parseDateLocal(s) { const p = s.split('-'); return new Date(Date.UTC(+p[0], +p[1]-1, +p[2])); }
+  function fmtDateLocal(d) {
+    return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + String(d.getUTCDate()).padStart(2,'0');
+  }
+  function expandRecurring(rangeStartDate, rangeEndDate) {
+    const events = [];
+    for (const def of RECURRING) {
+      const first = parseDateLocal(def.firstStart);
+      const dur = def.duration;
+      const interval = def.interval;
+      const diffDays = Math.floor((rangeStartDate - first) / 86400000);
+      const skipCount = diffDays > 0 ? Math.floor(diffDays / interval) : 0;
+      let occ = new Date(first.getTime() + skipCount * interval * 86400000);
+      for (let safety = 0; safety < 200; safety++) {
+        const occEnd = new Date(occ.getTime() + (dur - 1) * 86400000);
+        if (occ > rangeEndDate) break;
+        if (occEnd >= rangeStartDate) {
+          events.push({
+            eventName: def.title,
+            startDate: fmtDateLocal(occ),
+            endDate: fmtDateLocal(occEnd),
+            eventType: def.category,
+            participationMethod: def.color,
+            targetPoints: '-',
+            _recurring: true,
+            _description: def.description
+          });
+        }
+        occ = new Date(occ.getTime() + interval * 86400000);
+      }
+    }
+    return events;
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
-    currentYear = now.getFullYear();
-    currentMonth = now.getMonth();
+    currentYear = now.getUTCFullYear();
+    currentMonth = now.getUTCMonth();
     checkLoginState();
     loadEvents();
   });
@@ -276,6 +327,10 @@
       if (result && result.success) {
         eventsData = result.events || [];
       }
+      // Merge recurring events for visible range
+      const rangeStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+      const rangeEnd = new Date(Date.UTC(currentYear, currentMonth + 2, 0));
+      eventsData = eventsData.concat(expandRecurring(rangeStart, rangeEnd));
       document.getElementById('loadingDiv').style.display = 'none';
       document.getElementById('calendarGrid').style.display = 'grid';
       renderCalendar();
@@ -290,11 +345,17 @@
     currentMonth += delta;
     if (currentMonth > 11) { currentMonth = 0; currentYear++; }
     if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    // Re-expand recurring events for new month range
+    eventsData = eventsData.filter(ev => !ev._recurring);
+    const rangeStart = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+    const rangeEnd = new Date(Date.UTC(currentYear, currentMonth + 2, 0));
+    eventsData = eventsData.concat(expandRecurring(rangeStart, rangeEnd));
     renderCalendar();
+    renderUpcoming();
   }
   function goToday() {
     const now = new Date();
-    currentYear = now.getFullYear(); currentMonth = now.getMonth();
+    currentYear = now.getUTCFullYear(); currentMonth = now.getUTCMonth();
     renderCalendar();
   }
 
@@ -305,26 +366,26 @@
     // Remove old day cells (keep 7 headers)
     while (grid.children.length > 7) grid.removeChild(grid.lastChild);
 
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const firstDay = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const lastDay = new Date(Date.UTC(currentYear, currentMonth + 1, 0));
     // Monday=0 adjustment (JS: 0=Sun)
-    let startDow = firstDay.getDay() - 1;
+    let startDow = firstDay.getUTCDay() - 1;
     if (startDow < 0) startDow = 6;
 
     const today = new Date();
     const todayStr = formatDate(today);
 
     // Fill leading days from previous month
-    const prevMonthLast = new Date(currentYear, currentMonth, 0).getDate();
+    const prevMonthLast = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
     for (let i = startDow - 1; i >= 0; i--) {
       const day = prevMonthLast - i;
-      const dateStr = formatDate(new Date(currentYear, currentMonth - 1, day));
+      const dateStr = formatDate(new Date(Date.UTC(currentYear, currentMonth - 1, day)));
       grid.appendChild(createDayCell(day, dateStr, true));
     }
 
     // Current month days
-    for (let d = 1; d <= lastDay.getDate(); d++) {
-      const dateStr = formatDate(new Date(currentYear, currentMonth, d));
+    for (let d = 1; d <= lastDay.getUTCDate(); d++) {
+      const dateStr = formatDate(new Date(Date.UTC(currentYear, currentMonth, d)));
       const isToday = dateStr === todayStr;
       grid.appendChild(createDayCell(d, dateStr, false, isToday));
     }
@@ -333,7 +394,7 @@
     const totalCells = grid.children.length - 7;
     const remaining = (7 - (totalCells % 7)) % 7;
     for (let d = 1; d <= remaining; d++) {
-      const dateStr = formatDate(new Date(currentYear, currentMonth + 1, d));
+      const dateStr = formatDate(new Date(Date.UTC(currentYear, currentMonth + 1, d)));
       grid.appendChild(createDayCell(d, dateStr, true));
     }
   }
@@ -357,9 +418,9 @@
   }
 
   function formatDate(d) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   }
 
