@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>cCc Champions SK6 - Calendar</title>
-  <link rel="icon" type="image/png" href="ccc-sk6.png">
+  <title>cCc League One SK6 - Calendar</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <script src="config.js"></script>
   <script src="site-config.js"></script>
   <script src="portal-shim.js"></script>
   <style>
     :root {
-      --primary: #1a7a6d; --primary-hover: #156b60; --accent: #c8a415; --accent-light: #e6d06c;
+      --primary: #5b3a8f; --primary-hover: #4a2d7a; --accent: #c8a415; --accent-light: #e6d06c;
       --bg-dark: #f5f0e4; --bg-card: rgba(255, 252, 245, 0.97);
-      --text: #2d2418; --text-muted: #6b5d4e; --success: #27ae60; --danger: #c0392b; --border: #d4c9b5;
+      --text: #2d2418; --text-muted: #6b5d4e; --success: #7b52ab; --danger: #c0392b; --border: #d4c9b5;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -49,7 +49,7 @@
       border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px 16px;
     }
     h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
-    .site-logo { width: 64px; height: 64px; display: block; margin: 0 auto 8px auto; }
+    .site-logo { height: 64px; width: auto; display: block; margin: 0 auto 8px auto; }
     .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
 
     /* Month Navigation */
@@ -90,7 +90,8 @@
     .event-dot.ev-doomsday        { background: #fce4ec; color: #c62828; }
     .event-dot.ev-arachne          { background: #e8f5e9; color: #2e7d32; }
     .event-dot.ev-slaughter        { background: #fff3e0; color: #e65100; }
-    .event-dot.ev-active-period    { background: #e8eaf6; color: #283593; }
+    .event-dot.ev-crypting         { background: #e8eaf6; color: #283593; }
+    .event-dot.ev-crypting-bar      { background: #c5cae9; color: #283593; height: 4px; padding: 0; margin: 1px 0; border-radius: 2px; font-size: 0; cursor: pointer; }
     .event-dot.ev-ancients         { background: #e0f7fa; color: #00695c; }
     .event-dot.ev-great-hunt       { background: #f3e5f5; color: #6a1b9a; }
     .event-dot.ev-kvk              { background: #fbe9e7; color: #bf360c; }
@@ -191,7 +192,7 @@
 </nav>
 
 <div class="container">
-  <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
+  <img src="clo-sk6.png" alt="cCc League One SK6" class="site-logo">
   <h1>Calendar</h1>
   <p class="subtitle">Event Schedule Overview</p>
 
@@ -249,7 +250,7 @@
     { title: 'Doomsday',          firstStart: '2026-05-20', duration: 1, interval: 5,  color: 'ev-doomsday',        category: 'Daily Event', description: 'Doomsday — recurring every 6 days.' },
     { title: 'Arachne\'s Swarm',  firstStart: '2026-05-21', duration: 1, interval: 5,  color: 'ev-arachne',         category: 'Daily Event', description: 'Arachne\'s Swarm — recurring every 6 days.' },
     { title: 'Ruthless Slaughter',firstStart: '2026-05-24', duration: 1, interval: 5,  color: 'ev-slaughter',       category: 'Daily Event', description: 'Ruthless Slaughter — recurring every 6 days.' },
-    { title: 'Active Period',     firstStart: '2026-05-14', duration: 6, interval: 5,  color: 'ev-active-period',   category: 'Crypting', description: 'Crypting period.' },
+    { title: 'Crypting Period',    firstStart: '2026-05-14', duration: 6, interval: 5,  color: 'ev-crypting',        category: 'Crypting', description: 'Crypting period.' },
     { title: 'Ancients',          firstStart: '2026-05-20', duration: 1, interval: 5,  color: 'ev-ancients',        category: 'Daily Event', description: 'Ancients — 2-day event.' },
     { title: 'The Great Hunt',    firstStart: '2026-05-19', duration: 1, interval: 5,  color: 'ev-great-hunt',      category: 'Daily Event', description: 'The Great Hunt — recurring every 6 days.' },
     { title: 'KvK',               firstStart: '2026-05-24', duration: 1, interval: 5,  color: 'ev-kvk',             category: 'Major Event', description: 'Kingdom vs Kingdom — recurring every 24 days.' },
@@ -424,8 +425,23 @@
     eventsData.forEach(ev => {
       if (ev.startDate && ev.endDate && dateStr >= ev.startDate && dateStr <= ev.endDate) {
         const dot = document.createElement('span');
-        dot.className = 'event-dot ' + (ev.participationMethod || 'manual-entry').replace(' ', '-');
-        dot.textContent = ev.eventName;
+        const colorClass = (ev.participationMethod || 'manual-entry').replace(' ', '-');
+        // Crypting Period: show start/bar/end instead of repeating label
+        if (ev.eventName === 'Crypting Period') {
+          if (dateStr === ev.startDate) {
+            dot.className = 'event-dot ' + colorClass;
+            dot.textContent = '▶ Crypting Start';
+          } else if (dateStr === ev.endDate) {
+            dot.className = 'event-dot ' + colorClass;
+            dot.textContent = '◀ Crypting End';
+          } else {
+            dot.className = 'event-dot ev-crypting-bar';
+            dot.title = 'Crypting Period';
+          }
+        } else {
+          dot.className = 'event-dot ' + colorClass;
+          dot.textContent = ev.eventName;
+        }
         dot.onclick = (e) => { e.stopPropagation(); showEventPopup(ev); };
         cell.appendChild(dot);
       }
