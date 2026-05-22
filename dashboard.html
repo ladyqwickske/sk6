@@ -188,9 +188,25 @@
     .toast.error { border-left: 4px solid var(--danger); }
 
     /* Responsive */
+    .nav-links { display: flex; }
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer; padding: 8px;
+      flex-direction: column; gap: 4px;
+    }
+    .hamburger span {
+      display: block; width: 22px; height: 2px; background: var(--primary); border-radius: 2px;
+    }
     @media (max-width: 600px) {
       body { padding: 50px 4px 70px 4px; }
-      .tab-nav a { padding: 10px 10px; font-size: 0.8em; }
+      .tab-nav { flex-wrap: wrap; padding: 0 8px; align-items: center; }
+      .hamburger { display: flex; }
+      .login-bar {
+        position: static; flex: 1; justify-content: flex-end;
+        padding: 4px 0; gap: 6px;
+      }
+      .nav-links { display: none; width: 100%; flex-direction: column; order: 10; }
+      .nav-links.open { display: flex; }
+      .nav-links a { padding: 10px 12px; font-size: 0.9em; border-bottom: 1px solid var(--border); }
       .stat-card .stat-value { font-size: 1.4em; }
       .container { padding: 16px 8px; }
       .header-cell:nth-child(2), .cell:nth-child(2) { min-width: 110px; max-width: 130px; width: 120px; }
@@ -201,18 +217,19 @@
 
 <!-- Tab Navigation -->
 <nav class="tab-nav" id="tabNav">
-  <a href="dashboard.html" class="active"><img src="chest.png" class="nav-icon" alt=""> Dashboard</a>
-  <a href="events.html" id="navEvents" style="display:none"><img src="events.png" class="nav-icon" alt=""> Events</a>
-  <a href="members.html" id="navMembers" style="display:none"><img src="members.png" class="nav-icon" alt=""> Members</a>
-  <a href="calendar.html"><img src="calendar.png" class="nav-icon" alt=""> Calendar</a>
+  <button class="hamburger" id="hamburgerBtn" onclick="document.getElementById('navLinks').classList.toggle('open')"><span></span><span></span><span></span></button>
+  <div class="login-bar" id="loginBar">
+    <span class="user-email" id="userEmail" style="display:none"></span>
+    <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
+    <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
+  </div>
+  <div class="nav-links" id="navLinks">
+    <a href="dashboard.html" class="active"><img src="chest.png" class="nav-icon" alt=""> Dashboard</a>
+    <a href="events.html" id="navEvents" style="display:none"><img src="events.png" class="nav-icon" alt=""> Events</a>
+    <a href="members.html" id="navMembers" style="display:none"><img src="members.png" class="nav-icon" alt=""> Members</a>
+    <a href="calendar.html"><img src="calendar.png" class="nav-icon" alt=""> Calendar</a>
+  </div>
 </nav>
-
-<!-- Login Bar -->
-<div class="login-bar" id="loginBar">
-  <span class="user-email" id="userEmail" style="display:none"></span>
-  <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
-  <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
-</div>
 
 <div class="container">
   <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">

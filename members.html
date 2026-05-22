@@ -128,26 +128,44 @@
 
     .member-count { text-align: center; color: var(--text-muted); font-size: 0.85em; margin-bottom: 12px; }
 
+    .nav-links { display: flex; }
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer; padding: 8px;
+      flex-direction: column; gap: 4px;
+    }
+    .hamburger span {
+      display: block; width: 22px; height: 2px; background: var(--primary); border-radius: 2px;
+    }
     @media (max-width: 600px) {
       body { padding: 50px 4px 70px 4px; }
-      .tab-nav a { padding: 10px 10px; font-size: 0.8em; }
+      .tab-nav { flex-wrap: wrap; padding: 0 8px; align-items: center; }
+      .hamburger { display: flex; }
+      .login-bar {
+        position: static; flex: 1; justify-content: flex-end;
+        padding: 4px 0; gap: 6px;
+      }
+      .nav-links { display: none; width: 100%; flex-direction: column; order: 10; }
+      .nav-links.open { display: flex; }
+      .nav-links a { padding: 10px 12px; font-size: 0.9em; border-bottom: 1px solid var(--border); }
     }
   </style>
 </head>
 <body>
 
 <nav class="tab-nav">
-  <a href="dashboard.html"><img src="chest.png" class="nav-icon" alt=""> Dashboard</a>
-  <a href="events.html"><img src="events.png" class="nav-icon" alt=""> Events</a>
-  <a href="members.html" class="active"><img src="members.png" class="nav-icon" alt=""> Members</a>
-  <a href="calendar.html"><img src="calendar.png" class="nav-icon" alt=""> Calendar</a>
+  <button class="hamburger" id="hamburgerBtn" onclick="document.getElementById('navLinks').classList.toggle('open')"><span></span><span></span><span></span></button>
+  <div class="login-bar" id="loginBar">
+    <span class="user-email" id="userEmail" style="display:none"></span>
+    <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
+    <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
+  </div>
+  <div class="nav-links" id="navLinks">
+    <a href="dashboard.html"><img src="chest.png" class="nav-icon" alt=""> Dashboard</a>
+    <a href="events.html"><img src="events.png" class="nav-icon" alt=""> Events</a>
+    <a href="members.html" class="active"><img src="members.png" class="nav-icon" alt=""> Members</a>
+    <a href="calendar.html"><img src="calendar.png" class="nav-icon" alt=""> Calendar</a>
+  </div>
 </nav>
-
-<div class="login-bar" id="loginBar">
-  <span class="user-email" id="userEmail" style="display:none"></span>
-  <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
-  <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
-</div>
 
 <div class="login-gate" id="loginGate" style="max-width:500px;margin:80px auto;text-align:center;background:var(--bg-card);border-radius:16px;padding:40px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
   <h2 style="color:var(--primary);margin-bottom:12px;">🔒 Login Required</h2>
