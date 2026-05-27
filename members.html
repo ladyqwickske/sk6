@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>cCc Champions SK6 - Members</title>
-  <link rel="icon" type="image/png" href="ccc-sk6.png">
+  <title>cCc League One SK6 - Members</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <script src="config.js"></script>
   <script src="site-config.js"></script>
   <script src="portal-shim.js"></script>
   <style>
     :root {
-      --primary: #1a7a6d;
-      --primary-hover: #156b60;
+      --primary: #5b3a8f;
+      --primary-hover: #4a2d7a;
       --accent: #c8a415;
       --accent-light: #e6d06c;
       --bg-dark: #f5f0e4;
       --bg-card: rgba(255, 252, 245, 0.97);
       --text: #2d2418;
       --text-muted: #6b5d4e;
-      --success: #27ae60;
+      --success: #7b52ab;
       --danger: #c0392b;
       --border: #d4c9b5;
     }
@@ -60,7 +60,7 @@
       border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px 16px;
     }
     h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
-    .site-logo { width: 64px; height: 64px; display: block; margin: 0 auto 8px auto; }
+    .site-logo { height: 64px; width: auto; display: block; margin: 0 auto 8px auto; }
     .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
 
     /* Member Form (admin only) */
@@ -148,6 +148,29 @@
       .nav-links.open { display: flex; }
       .nav-links a { padding: 10px 12px; font-size: 0.9em; border-bottom: 1px solid var(--border); }
     }
+
+    /* Tabs & Forms */
+    .tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    .tab-btn-inner { padding: 8px 14px; background: none; border: none; color: var(--text-muted); font-size: 0.85em; font-weight: 600; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn-inner:hover { color: var(--primary); }
+    .tab-btn-inner.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .form-grid label { display: block; font-size: 0.75em; font-weight: 600; color: var(--primary); margin-bottom: 4px; text-transform: uppercase; }
+    .form-grid input, .form-grid select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9em; background: #fff; color: var(--text); }
+    .form-grid input:focus, .form-grid select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(91,58,143,0.15); }
+    .form-grid .note { font-size: 0.7em; color: var(--text-muted); margin-top: 2px; }
+    .status { margin-top: 8px; padding: 8px 12px; border-radius: 6px; font-size: 0.85em; min-height: 1.5em; }
+    .status.ok { background: #e8f5e9; color: #2e7d32; }
+    .status.err { background: #ffebee; color: #c62828; }
+    .troop-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; font-weight: 700; min-width: 28px; text-align: center; }
+    .troop-badge.g { background: #e8f5e9; color: #2e7d32; }
+    .troop-badge.m { background: #e3f2fd; color: #1565c0; }
+    .troop-badge.s { background: #fff3e0; color: #e65100; }
+    .troop-badge.e { background: #f3e5f5; color: #7b1fa2; }
+    .troop-badge.c { background: #fce4ec; color: #c62828; }
+    .hero-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -174,18 +197,59 @@
 </div>
 
 <div class="container" id="mainContent" style="display:none">
-  <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
+  <img src="clo-sk6.png" alt="cCc League One SK6" class="site-logo">
   <h1>Members</h1>
   <p class="subtitle">Clan Roster</p>
 
-  <!-- Admin Panel - Add/Manage Members -->
+  <!-- Admin Panel - Tabbed Interface -->
   <div class="admin-panel" id="adminPanel">
-    <h3>➕ Add New Member</h3>
-    <div class="form-row">
-      <input type="text" id="newMemberName" placeholder="Player Name">
-      <input type="date" id="newMemberJoinDate">
-      <button class="btn" onclick="addNewMember()">Add Member</button>
+    <div class="tabs">
+      <button class="tab-btn-inner active" onclick="switchTab('troopTab', this)">⚔️ Track Troops</button>
+      <button class="tab-btn-inner" onclick="switchTab('heroTab', this)">🦸 Hero Level</button>
+      <button class="tab-btn-inner" onclick="switchTab('addMemberTab', this)">➕ Add Member</button>
     </div>
+
+    <div id="troopTab" class="tab-panel active">
+      <h3 style="margin:0 0 10px;color:var(--primary)">Track Troop Levels</h3>
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+        <div><label>Member</label><select id="troopMemberSelect" onchange="loadMemberTroops()"></select></div>
+        <div><label>Date</label><input type="date" id="troopDateInput"><div class="note">Defaults to today</div></div>
+      </div>
+      <div class="form-grid" style="grid-template-columns: repeat(5, 1fr);">
+        <div><label>Guardsmen (G)</label><input type="number" id="troopG" min="3" max="9" placeholder="3-9"></div>
+        <div><label>Specialists (S)</label><input type="number" id="troopS" min="3" max="9" placeholder="3-9"></div>
+        <div><label>Monsters (M)</label><input type="number" id="troopM" min="3" max="9" placeholder="3-9"></div>
+        <div><label>Eng. Corps (E)</label><input type="number" id="troopE" min="3" max="9" placeholder="3-9"></div>
+        <div><label>Carter Lvl (C)</label><input type="number" id="troopC" min="1" max="500" placeholder="1-500"></div>
+      </div>
+      <div class="form-grid" style="grid-template-columns: 1fr;">
+        <div><label>Notes (optional)</label><input type="text" id="troopNotesInput" placeholder="e.g. upgraded during event"></div>
+      </div>
+      <button class="btn" onclick="submitAllTroops()">💾 Save Changed Levels</button>
+      <div id="troopStatus" class="status"></div>
+    </div>
+
+    <div id="heroTab" class="tab-panel">
+      <h3 style="margin:0 0 10px;color:var(--primary)">Track Hero Level</h3>
+      <div class="form-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div><label>Member</label><select id="heroMemberSelect"></select></div>
+        <div><label>Hero Level</label><input type="number" id="heroLevelInput" placeholder="e.g. 350" min="0" onkeypress="if(event.key==='Enter') submitHeroLevel();"></div>
+        <div><label>Date</label><input type="date" id="heroDateInput"><div class="note">Defaults to today</div></div>
+      </div>
+      <button class="btn" onclick="submitHeroLevel()">💾 Save Hero Level</button>
+      <div id="heroStatus" class="status"></div>
+    </div>
+
+    <div id="addMemberTab" class="tab-panel">
+      <h3 style="margin:0 0 10px;color:var(--primary)">Add New Member</h3>
+      <div class="form-grid" style="grid-template-columns: repeat(2, 1fr);">
+        <div><label>Player Name</label><input type="text" id="newMemberName" placeholder="Player Name"></div>
+        <div><label>Join Date</label><input type="date" id="newMemberJoinDate"></div>
+      </div>
+      <button class="btn" onclick="addNewMember()">➕ Add Member</button>
+      <div id="addMemberStatus" class="status"></div>
+    </div>
+
   </div>
 
   <div class="member-count" id="memberCount"></div>
@@ -197,6 +261,12 @@
         <tr>
           <th onclick="sortTable('name')">Name</th>
           <th onclick="sortTable('joinDate')">Joined</th>
+          <th onclick="sortTable('heroLevel')">Hero</th>
+          <th onclick="sortTable('G')" title="Guardsmen">G</th>
+          <th onclick="sortTable('M')" title="Monsters">M</th>
+          <th onclick="sortTable('S')" title="Specialists">S</th>
+          <th onclick="sortTable('E')" title="Engineer Corps">E</th>
+          <th onclick="sortTable('C')" title="Carter Level">C</th>
           <th id="actionsHeader" style="display:none">Actions</th>
         </tr>
       </thead>
@@ -209,19 +279,30 @@
 
 <script>
   let membersData = [];
+  let troopData = {};   // { lowerName: { G: lvl, M: lvl, S: lvl, E: lvl, C: lvl } }
+  let heroData = {};    // { lowerName: { level, timestamp } }
   let sortField = 'name';
   let sortAsc = true;
   let isLoggedIn = false;
   let currentUser = null;
 
   document.addEventListener('DOMContentLoaded', () => {
+    setTodayDefaults();
     checkLoginState();
     if (isLoggedIn) {
       document.getElementById('loginGate').style.display = 'none';
       document.getElementById('mainContent').style.display = 'block';
-      loadMembers();
+      loadAllData();
     }
   });
+
+  function setTodayDefaults() {
+    const today = new Date().toISOString().split('T')[0];
+    ['troopDateInput', 'heroDateInput', 'newMemberJoinDate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = today;
+    });
+  }
 
   // AUTH (same pattern as dashboard)
   function checkLoginState() {
@@ -291,39 +372,84 @@
     document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline' : 'none';
     document.getElementById('adminPanel').classList.toggle('visible', isLoggedIn);
     document.getElementById('actionsHeader').style.display = isLoggedIn ? '' : 'none';
-    // Show/hide main content based on login
     document.getElementById('loginGate').style.display = isLoggedIn ? 'none' : 'block';
     document.getElementById('mainContent').style.display = isLoggedIn ? 'block' : 'none';
-    if (isLoggedIn && membersData.length === 0) loadMembers();
+    if (isLoggedIn && membersData.length === 0) loadAllData();
     if (membersData.length > 0) renderTable();
   }
 
-  // LOAD MEMBERS
-  async function loadMembers() {
+  // LOAD ALL DATA (members + troops + hero levels)
+  async function loadAllData() {
     try {
-      const result = await callFunction('getMembersList');
-      if (Array.isArray(result)) {
-        membersData = result;
-        document.getElementById('memberCount').textContent = `${membersData.length} members`;
-        renderTable();
+      const [members, troopSummary, heroLevels] = await Promise.all([
+        callFunction('getMembersList'),
+        callFunction('getAllTroopLevelsSummary').catch(() => null),
+        callFunction('getHeroLevels').catch(() => null)
+      ]);
+
+      if (Array.isArray(members)) {
+        membersData = members;
       }
+
+      // Process troop data
+      troopData = {};
+      if (troopSummary && troopSummary.success && Array.isArray(troopSummary.data)) {
+        troopSummary.data.forEach(entry => {
+          const name = (entry.playerName || '').trim();
+          if (name) troopData[name.toLowerCase()] = entry.currentLevels || {};
+        });
+      }
+
+      // Process hero data
+      heroData = {};
+      if (heroLevels && heroLevels.success && Array.isArray(heroLevels.data)) {
+        heroLevels.data.forEach(entry => {
+          const name = (entry.playerName || '').trim();
+          if (name) heroData[name.toLowerCase()] = { level: entry.level, timestamp: entry.timestamp };
+        });
+      }
+
+      document.getElementById('memberCount').textContent = `${membersData.length} members`;
+      populateSelects();
+      renderTable();
       document.getElementById('loadingDiv').style.display = 'none';
       document.getElementById('tableContainer').style.display = 'block';
     } catch (err) {
       console.error(err);
-      document.getElementById('loadingDiv').innerHTML = '<span style="color:var(--danger)">Failed to load members</span>';
+      document.getElementById('loadingDiv').innerHTML = '<span style="color:var(--danger)">Failed to load data</span>';
     }
   }
 
+  function populateSelects() {
+    const sorted = [...membersData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const options = '<option value="">-- Select member --</option>' +
+      sorted.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('');
+    ['troopMemberSelect', 'heroMemberSelect'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = options;
+    });
+  }
+
+  // RENDER TABLE
   function renderTable() {
     const tbody = document.getElementById('membersTableBody');
     tbody.innerHTML = '';
 
     const sorted = [...membersData].sort((a, b) => {
       let va, vb;
+      const keyA = (a.name || '').toLowerCase();
+      const keyB = (b.name || '').toLowerCase();
+      const tA = troopData[keyA] || {};
+      const tB = troopData[keyB] || {};
+      const hA = heroData[keyA];
+      const hB = heroData[keyB];
+
       switch (sortField) {
-        case 'name': va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); break;
+        case 'name': va = keyA; vb = keyB; break;
         case 'joinDate': va = a.joinDate || ''; vb = b.joinDate || ''; break;
+        case 'heroLevel': va = hA ? hA.level : -1; vb = hB ? hB.level : -1; break;
+        case 'G': case 'M': case 'S': case 'E': case 'C':
+          va = tA[sortField] || 0; vb = tB[sortField] || 0; break;
         default: va = 0; vb = 0;
       }
       if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
@@ -331,17 +457,79 @@
     });
 
     sorted.forEach(m => {
+      const key = (m.name || '').toLowerCase();
+      const troops = troopData[key] || {};
+      const hero = heroData[key];
       const tr = document.createElement('tr');
+
+      const heroHtml = hero && hero.level != null
+        ? `<span class="hero-badge" style="background:${getHeroBg(hero.level)};color:${getHeroFg(hero.level)}" title="Updated: ${hero.timestamp || '?'}">${hero.level}</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+
       tr.innerHTML = `
         <td><strong>${escapeHtml(m.name)}</strong></td>
         <td>${escapeHtml(m.joinDate)}</td>
+        <td style="text-align:center">${heroHtml}</td>
+        <td style="text-align:center">${troopBadge('g', troops.G)}</td>
+        <td style="text-align:center">${troopBadge('m', troops.M)}</td>
+        <td style="text-align:center">${troopBadge('s', troops.S)}</td>
+        <td style="text-align:center">${troopBadge('e', troops.E)}</td>
+        <td style="text-align:center">${troopBadge('c', troops.C)}</td>
         ${isLoggedIn ? `<td class="member-actions">
-          <button onclick="renameMember('${escapeAttr(m.name)}')">✏️</button>
-          <button class="remove-btn" onclick="removeMember('${escapeAttr(m.name)}')">🗑️</button>
+          <button title="Edit troops" onclick="quickEditTroop('${escapeAttr(m.name)}')">&nbsp;⚔️&nbsp;</button>
+          <button title="Edit hero" onclick="quickEditHero('${escapeAttr(m.name)}')">&nbsp;🦸&nbsp;</button>
+          <button title="Rename" onclick="renameMember('${escapeAttr(m.name)}')">&nbsp;✏️&nbsp;</button>
+          <button class="remove-btn" title="Remove" onclick="removeMember('${escapeAttr(m.name)}')">&nbsp;🗑️&nbsp;</button>
         </td>` : ''}
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  function troopBadge(type, level) {
+    if (!level) return '<span style="color:var(--text-muted)">—</span>';
+    return `<span class="troop-badge ${type}">${level}</span>`;
+  }
+
+  function getHeroBg(lvl) {
+    if (lvl > 500) return '#4a148c';
+    if (lvl > 400) return '#0d47a1';
+    if (lvl > 300) return '#1b5e20';
+    if (lvl > 200) return '#fbc02d';
+    if (lvl > 100) return '#37474f';
+    return '#4e342e';
+  }
+  function getHeroFg(lvl) {
+    if (lvl > 500) return '#e1bee7';
+    if (lvl > 400) return '#bbdefb';
+    if (lvl > 300) return '#c8e6c9';
+    if (lvl > 200) return '#3e2723';
+    if (lvl > 100) return '#eceff1';
+    return '#d7ccc8';
+  }
+
+  // TROOP BULK FORM
+  let loadedTroopLevels = {};
+  function loadMemberTroops() {
+    const name = document.getElementById('troopMemberSelect').value;
+    const key = name ? name.toLowerCase() : '';
+    const troops = troopData[key] || {};
+    loadedTroopLevels = { ...troops };
+    ['G', 'S', 'M', 'E', 'C'].forEach(t => {
+      document.getElementById('troop' + t).value = troops[t] || '';
+    });
+  }
+  function quickEditTroop(name) {
+    document.getElementById('troopMemberSelect').value = name;
+    switchTab('troopTab', document.querySelector('.tab-btn-inner'));
+    loadMemberTroops();
+    document.getElementById('troopG').focus();
+  }
+  function quickEditHero(name) {
+    document.getElementById('heroMemberSelect').value = name;
+    const btns = document.querySelectorAll('.tab-btn-inner');
+    switchTab('heroTab', btns[1]);
+    document.getElementById('heroLevelInput').focus();
   }
 
   function sortTable(field) {
@@ -350,36 +538,114 @@
     renderTable();
   }
 
-  // MEMBER ACTIONS
+  // TAB SWITCHING
+  function switchTab(tabId, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn-inner').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId)?.classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+
+  // TROOP BULK ENTRY
+  async function submitAllTroops() {
+    const playerName = document.getElementById('troopMemberSelect').value;
+    const date = document.getElementById('troopDateInput').value;
+    const notes = document.getElementById('troopNotesInput').value.trim();
+    const status = document.getElementById('troopStatus');
+    status.textContent = ''; status.className = 'status';
+    if (!playerName) { status.textContent = 'Please select a member.'; status.className = 'status err'; return; }
+    const customTimestamp = date ? date + 'T12:00:00Z' : null;
+    const types = ['G', 'S', 'M', 'E', 'C'];
+    const changes = [];
+    for (const t of types) {
+      const raw = document.getElementById('troop' + t).value;
+      if (raw === '') continue;
+      const level = parseInt(raw, 10);
+      const isC = t === 'C';
+      if (isNaN(level) || (isC ? (level < 1 || level > 500) : (level < 3 || level > 9))) {
+        status.textContent = `${t}: ${isC ? 'must be 1-500' : 'must be 3-9'}.`;
+        status.className = 'status err'; return;
+      }
+      if (level !== (loadedTroopLevels[t] || 0)) changes.push({ type: t, level });
+    }
+    if (changes.length === 0) { status.textContent = 'No changes detected.'; status.className = 'status err'; return; }
+    status.textContent = `Saving ${changes.length} change(s)...`;
+    try {
+      const results = await Promise.all(
+        changes.map(c => callFunction('addTroopEntry', [playerName, c.type, c.level, notes, customTimestamp]))
+      );
+      const ok = results.filter(r => r && r.success).length;
+      const fail = results.length - ok;
+      const key = playerName.toLowerCase();
+      if (!troopData[key]) troopData[key] = {};
+      changes.forEach(c => { troopData[key][c.type] = c.level; });
+      loadedTroopLevels = { ...troopData[key] };
+      renderTable();
+      status.textContent = fail ? `${ok} saved, ${fail} failed.` : `${ok} troop level(s) updated for ${playerName}.`;
+      status.className = fail ? 'status err' : 'status ok';
+      document.getElementById('troopNotesInput').value = '';
+    } catch (err) {
+      status.textContent = 'Error: ' + err.message;
+      status.className = 'status err';
+    }
+  }
+
+  // HERO LEVEL ENTRY
+  async function submitHeroLevel() {
+    const playerName = document.getElementById('heroMemberSelect').value;
+    const levelRaw = document.getElementById('heroLevelInput').value;
+    const date = document.getElementById('heroDateInput').value;
+    const status = document.getElementById('heroStatus');
+    status.textContent = ''; status.className = 'status';
+
+    if (!playerName) { status.textContent = 'Please select a member.'; status.className = 'status err'; return; }
+    const level = parseInt(levelRaw, 10);
+    if (isNaN(level) || level < 0) { status.textContent = 'Enter a valid hero level (0+).'; status.className = 'status err'; return; }
+
+    status.textContent = 'Saving...';
+    const customTimestamp = date ? date + 'T12:00:00Z' : null;
+    try {
+      const result = await callFunction('recordHeroLevel', [playerName, level, customTimestamp]);
+      if (result && result.success) {
+        status.textContent = result.message || `Hero level ${level} saved for ${playerName}.`;
+        status.className = 'status ok';
+        document.getElementById('heroLevelInput').value = '';
+        heroData[playerName.toLowerCase()] = { level, timestamp: date || new Date().toISOString() };
+        renderTable();
+      } else {
+        status.textContent = result?.message || 'Failed to save.';
+        status.className = 'status err';
+      }
+    } catch (err) {
+      status.textContent = 'Error: ' + err.message;
+      status.className = 'status err';
+    }
+  }
+
+  // ADD MEMBER
   async function addNewMember() {
     const name = document.getElementById('newMemberName').value.trim();
     const joinDate = document.getElementById('newMemberJoinDate').value;
-    if (!name) { showToast('Name is required', 'error'); return; }
+    const status = document.getElementById('addMemberStatus');
+    status.textContent = ''; status.className = 'status';
+    if (!name) { status.textContent = 'Name is required.'; status.className = 'status err'; return; }
 
+    status.textContent = 'Adding...';
     try {
       const result = await callFunction('addMember', [name, joinDate, 0]);
       if (result && result.success) {
-        showToast(result.message, 'success');
+        status.textContent = result.message || `Added "${name}".`;
+        status.className = 'status ok';
         document.getElementById('newMemberName').value = '';
-        loadMembers();
+        loadAllData();
       } else {
-        showToast(result?.message || 'Failed to add member', 'error');
+        status.textContent = result?.message || 'Failed to add member.';
+        status.className = 'status err';
       }
-    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+    } catch (err) { status.textContent = 'Error: ' + err.message; status.className = 'status err'; }
   }
 
-  async function removeMember(name) {
-    if (!confirm(`Remove "${name}" and archive to Former Members?`)) return;
-    try {
-      const result = await callFunction('removeMember', [name]);
-      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
-      if (result?.success) {
-        membersData = membersData.filter(m => m.name !== name);
-        renderTable();
-      }
-    } catch (err) { showToast('Error: ' + err.message, 'error'); }
-  }
-
+  // RENAME MEMBER (inline prompt)
   async function renameMember(oldName) {
     const newName = prompt(`New name for "${oldName}":`, oldName);
     if (!newName || newName === oldName) return;
@@ -389,7 +655,30 @@
       if (result?.success) {
         const member = membersData.find(m => m.name === oldName);
         if (member) member.name = newName;
+        // Update troop/hero data keys
+        const oldKey = oldName.toLowerCase();
+        const newKey = newName.toLowerCase();
+        if (troopData[oldKey]) { troopData[newKey] = troopData[oldKey]; delete troopData[oldKey]; }
+        if (heroData[oldKey]) { heroData[newKey] = heroData[oldKey]; delete heroData[oldKey]; }
+        populateSelects();
         renderTable();
+      }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // REMOVE MEMBER (inline confirm)
+  async function removeMember(name) {
+    if (!confirm(`Remove "${name}" and archive to Former Members?`)) return;
+    try {
+      const result = await callFunction('removeMember', [name]);
+      showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.success) {
+        membersData = membersData.filter(m => m.name !== name);
+        delete troopData[name.toLowerCase()];
+        delete heroData[name.toLowerCase()];
+        populateSelects();
+        renderTable();
+        document.getElementById('memberCount').textContent = `${membersData.length} members`;
       }
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }

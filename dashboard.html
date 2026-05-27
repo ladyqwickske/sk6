@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>cCc Champions SK6 - Dashboard</title>
-  <link rel="icon" type="image/png" href="ccc-sk6.png">
+  <title>cCc League One SK6 - Dashboard</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <script src="config.js"></script>
   <script src="site-config.js"></script>
   <script src="portal-shim.js"></script>
   <style>
     :root {
-      --primary: #1a7a6d;
-      --primary-hover: #156b60;
+      --primary: #5b3a8f;
+      --primary-hover: #4a2d7a;
       --accent: #c8a415;
       --accent-light: #e6d06c;
       --bg-dark: #f5f0e4;
       --bg-card: rgba(255, 252, 245, 0.97);
       --text: #2d2418;
       --text-muted: #6b5d4e;
-      --success: #27ae60;
+      --success: #7b52ab;
       --danger: #c0392b;
       --border: #d4c9b5;
     }
@@ -71,7 +71,7 @@
     }
 
     h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
-    .site-logo { width: 64px; height: 64px; display: block; margin: 0 auto 8px auto; }
+    .site-logo { height: 64px; width: auto; display: block; margin: 0 auto 8px auto; }
     .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
     .last-updated { color: var(--text-muted); font-size: 0.78em; font-style: italic; margin-top: 4px; }
 
@@ -157,7 +157,8 @@
     }
     .modal input[type="text"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,122,109,0.15); }
     .chest-ref-table { font-size: 0.85em; }
-    .chest-ref-table th { background: #f8f4ea; font-size: 0.85em; }
+    .chest-ref-table th { background: #f8f4ea; font-size: 0.85em; cursor: pointer; user-select: none; }
+    .chest-ref-table th:hover { background: #ede5d5; }
     .chest-ref-table td { padding: 6px 8px; }
 
     /* Chest Points Ref Button */
@@ -232,8 +233,8 @@
 </nav>
 
 <div class="container">
-  <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
-  <h1>cCc Champions SK6</h1>
+  <img src="clo-sk6.png" alt="cCc League One SK6" class="site-logo">
+  <h1>cCc League One SK6</h1>
   <p class="subtitle">Seasonal Kingdom Clan Dashboard</p>
 
   <!-- Period Selector -->
@@ -282,7 +283,7 @@
     <div class="table-container">
       <table class="chest-ref-table">
         <thead>
-          <tr><th>Type</th><th>Level</th><th>Points</th></tr>
+          <tr><th onclick="sortChestRef('type')">Type</th><th onclick="sortChestRef('level')">Level</th><th onclick="sortChestRef('points')">Points</th></tr>
         </thead>
         <tbody id="chestRefBody"></tbody>
       </table>
@@ -742,6 +743,22 @@
 
   function closeChestPointsRef() {
     document.getElementById('chestRefModal').classList.remove('active');
+  }
+
+  let chestRefSortField = 'type';
+  let chestRefSortAsc = true;
+  function sortChestRef(field) {
+    if (chestRefSortField === field) chestRefSortAsc = !chestRefSortAsc;
+    else { chestRefSortField = field; chestRefSortAsc = true; }
+    const query = document.getElementById('chestRefSearch').value.toLowerCase();
+    let data = chestRefData;
+    if (query) data = data.filter(c => c.type.toLowerCase().includes(query) || String(c.level).toLowerCase().includes(query));
+    data = [...data].sort((a, b) => {
+      let va = a[field], vb = b[field];
+      if (field === 'level' || field === 'points') { va = Number(va) || 0; vb = Number(vb) || 0; return chestRefSortAsc ? va - vb : vb - va; }
+      return chestRefSortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+    renderChestRef(data);
   }
 
   function renderChestRef(data) {

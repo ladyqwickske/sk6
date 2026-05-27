@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>cCc Champions SK6 - Events</title>
-  <link rel="icon" type="image/png" href="ccc-sk6.png">
+  <title>cCc League One SK6 - Events</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <script src="config.js"></script>
   <script src="site-config.js"></script>
   <script src="portal-shim.js"></script>
   <style>
     :root {
-      --primary: #1a7a6d; --primary-hover: #156b60; --accent: #c8a415; --accent-light: #e6d06c;
+      --primary: #5b3a8f; --primary-hover: #4a2d7a; --accent: #c8a415; --accent-light: #e6d06c;
       --bg-dark: #f5f0e4; --bg-card: rgba(255, 252, 245, 0.97);
-      --text: #2d2418; --text-muted: #6b5d4e; --success: #27ae60; --danger: #c0392b; --border: #d4c9b5;
+      --text: #2d2418; --text-muted: #6b5d4e; --success: #7b52ab; --danger: #c0392b; --border: #d4c9b5;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -49,7 +49,7 @@
       border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px 16px;
     }
     h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
-    .site-logo { width: 64px; height: 64px; display: block; margin: 0 auto 8px auto; }
+    .site-logo { height: 64px; width: auto; display: block; margin: 0 auto 8px auto; }
     .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
 
     /* Admin panel */
@@ -82,7 +82,8 @@
     /* Events Table */
     .table-container { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
-    th { background: #ede5d5; color: var(--primary); padding: 10px 8px; text-align: left; border-bottom: 2px solid var(--accent); }
+    th { background: #ede5d5; color: var(--primary); padding: 10px 8px; text-align: left; border-bottom: 2px solid var(--accent); cursor: pointer; user-select: none; }
+    th:hover { background: #ddd5c5; }
     td { padding: 8px; border-bottom: 1px solid #eee; }
     tr:hover { background: rgba(26,122,109,0.05); }
 
@@ -180,7 +181,7 @@
 </div>
 
 <div class="container" id="mainContent" style="display:none">
-  <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
+  <img src="clo-sk6.png" alt="cCc League One SK6" class="site-logo">
   <h1>Events</h1>
   <p class="subtitle">Event Management &amp; Participation Tracking</p>
 
@@ -247,12 +248,12 @@
       <table>
         <thead>
           <tr>
-            <th>Event Name</th>
-            <th>Type</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Method</th>
-            <th>Target</th>
+            <th onclick="sortEvents('eventName')">Event Name</th>
+            <th onclick="sortEvents('eventType')">Type</th>
+            <th onclick="sortEvents('startDate')">Start</th>
+            <th onclick="sortEvents('endDate')">End</th>
+            <th onclick="sortEvents('participationMethod')">Method</th>
+            <th onclick="sortEvents('targetPoints')">Target</th>
             <th id="eventActionsHeader" style="display:none">Actions</th>
           </tr>
         </thead>
@@ -291,10 +292,10 @@
       <table>
         <thead>
           <tr>
-            <th>Type Name</th>
-            <th>Method</th>
-            <th>Chest Types</th>
-            <th>Threshold</th>
+            <th onclick="sortTypes('name')">Type Name</th>
+            <th onclick="sortTypes('trackingMethod')">Method</th>
+            <th onclick="sortTypes('chestTypes')">Chest Types</th>
+            <th onclick="sortTypes('threshold')">Threshold</th>
             <th id="typeActionsHeader" style="display:none">Actions</th>
           </tr>
         </thead>
@@ -338,6 +339,35 @@
   let eventTypesData = [];
   let availableChestTypes = [];
   let isLoggedIn = false;
+
+  // Sort state
+  let eventsSortField = 'startDate';
+  let eventsSortAsc = false;
+  let typesSortField = 'name';
+  let typesSortAsc = true;
+  let partSortField = null;
+  let partSortAsc = true;
+  let lastPartData = [];
+  let lastPartHeaders = [];
+  function sortParticipation(field) {
+    if (partSortField === field) partSortAsc = !partSortAsc;
+    else { partSortField = field; partSortAsc = true; }
+    renderParticipation(lastPartData, lastPartHeaders);
+  }
+  function renderParticipation(data, headers) {
+    let sorted = [...data];
+    if (partSortField && headers.includes(partSortField)) {
+      sorted.sort((a, b) => {
+        let va = a[partSortField], vb = b[partSortField];
+        const na = Number(va), nb = Number(vb);
+        if (!isNaN(na) && !isNaN(nb)) return partSortAsc ? na - nb : nb - na;
+        return partSortAsc ? String(va || '').localeCompare(String(vb || '')) : String(vb || '').localeCompare(String(va || ''));
+      });
+    }
+    document.getElementById('participationBody').innerHTML = sorted.map(row =>
+      '<tr>' + headers.map(h => `<td>${escapeHtml(String(row[h] || ''))}</td>`).join('') + '</tr>'
+    ).join('');
+  }
   let currentUser = null;
   let editingEvent = null;
   let editingType = null;
@@ -501,10 +531,26 @@
   }
 
   // RENDER
+  function sortEvents(field) {
+    if (eventsSortField === field) eventsSortAsc = !eventsSortAsc;
+    else { eventsSortField = field; eventsSortAsc = true; }
+    renderEvents();
+  }
+  function sortTypes(field) {
+    if (typesSortField === field) typesSortAsc = !typesSortAsc;
+    else { typesSortField = field; typesSortAsc = true; }
+    renderEventTypes();
+  }
+
   function renderEvents() {
     const tbody = document.getElementById('eventsTableBody');
     tbody.innerHTML = '';
-    const sorted = [...eventsData].sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+    const sorted = [...eventsData].sort((a, b) => {
+      let va = a[eventsSortField] || '', vb = b[eventsSortField] || '';
+      if (eventsSortField === 'targetPoints') { va = Number(va) || 0; vb = Number(vb) || 0; }
+      if (typeof va === 'number') return eventsSortAsc ? va - vb : vb - va;
+      return eventsSortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
     sorted.forEach(ev => {
       const methodClass = ev.participationMethod === 'chest-based' ? 'method-chest' :
         ev.participationMethod === 'period-marker' ? 'method-period' : 'method-manual';
@@ -530,7 +576,13 @@
   function renderEventTypes() {
     const tbody = document.getElementById('typesTableBody');
     tbody.innerHTML = '';
-    eventTypesData.forEach(et => {
+    const sorted = [...eventTypesData].sort((a, b) => {
+      let va = a[typesSortField] || '', vb = b[typesSortField] || '';
+      if (typesSortField === 'threshold') { va = Number(va) || 0; vb = Number(vb) || 0; }
+      if (typeof va === 'number') return typesSortAsc ? va - vb : vb - va;
+      return typesSortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+    sorted.forEach(et => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${escapeHtml(et.name)}</strong></td>
@@ -680,10 +732,10 @@
       const result = await callFunction('getEventParticipation', [ev.eventName]);
       if (result && result.success && result.data.length > 0) {
         const headers = Object.keys(result.data[0]);
-        document.getElementById('participationHeaders').innerHTML = headers.map(h => `<th>${escapeHtml(h)}</th>`).join('');
-        document.getElementById('participationBody').innerHTML = result.data.map(row =>
-          '<tr>' + headers.map(h => `<td>${escapeHtml(String(row[h] || ''))}</td>`).join('') + '</tr>'
-        ).join('');
+        document.getElementById('participationHeaders').innerHTML = headers.map(h => `<th onclick="sortParticipation('${escapeHtml(h)}')">${escapeHtml(h)}</th>`).join('');
+        lastPartData = result.data;
+        lastPartHeaders = headers;
+        renderParticipation(result.data, headers);
       } else {
         document.getElementById('participationHeaders').innerHTML = '';
         document.getElementById('participationBody').innerHTML = '<tr><td style="text-align:center;color:var(--text-muted)">No participation data yet</td></tr>';
