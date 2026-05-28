@@ -206,6 +206,7 @@
     <div class="tabs">
       <button class="tab-btn-inner active" onclick="switchTab('troopTab', this)">⚔️ Track Troops</button>
       <button class="tab-btn-inner" onclick="switchTab('heroTab', this)">🦸 Hero Level</button>
+      <button class="tab-btn-inner" onclick="switchTab('pointTargetsTab', this)">🎯 Point Targets</button>
       <button class="tab-btn-inner" onclick="switchTab('addMemberTab', this)">➕ Add Member</button>
     </div>
 
@@ -238,6 +239,18 @@
       </div>
       <button class="btn" onclick="submitHeroLevel()">💾 Save Hero Level</button>
       <div id="heroStatus" class="status"></div>
+    </div>
+
+    <div id="pointTargetsTab" class="tab-panel">
+      <h3 style="margin:0 0 10px;color:var(--primary)">Custom Point Targets per Period</h3>
+      <p style="font-size:0.82em;color:var(--text-muted);margin-bottom:12px;">Set a custom required-points target for individual players. Leave blank or 0 to use the global period default. These overrides apply to the selected period only.</p>
+      <div class="form-grid" style="grid-template-columns: 1fr;">
+        <div><label>Period</label><select id="ptPeriodSelect"><option value="">Loading periods...</option></select></div>
+      </div>
+      <div id="ptTargetsList" style="max-height:340px;overflow-y:auto;margin:10px 0;border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;">Loading...</div>
+      <button class="btn" onclick="savePointTargets()">💾 Save Point Targets</button>
+      <button class="btn secondary" style="margin-left:8px;" onclick="loadPointTargets()">↻ Reload</button>
+      <div id="ptStatus" class="status"></div>
     </div>
 
     <div id="addMemberTab" class="tab-panel">
@@ -544,6 +557,7 @@
     document.querySelectorAll('.tab-btn-inner').forEach(b => b.classList.remove('active'));
     document.getElementById(tabId)?.classList.add('active');
     if (btn) btn.classList.add('active');
+    if (tabId === 'pointTargetsTab') loadPointTargetPeriods();
   }
 
   // TROOP BULK ENTRY
@@ -681,6 +695,100 @@
         document.getElementById('memberCount').textContent = `${membersData.length} members`;
       }
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // ===========================
+  // POINT TARGETS
+  // ===========================
+  let ptCurrentPeriod = '';
+  let ptPeriodsLoaded = false;
+
+  async function loadPointTargetPeriods() {
+    if (ptPeriodsLoaded) return;
+    try {
+      const eventsResult = await callFunction('getAllEvents');
+      const select = document.getElementById('ptPeriodSelect');
+      select.innerHTML = '';
+      if (eventsResult && eventsResult.success && Array.isArray(eventsResult.events)) {
+        const periods = eventsResult.events.filter(e => e.participationMethod === 'period-marker');
+        periods.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+        periods.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.eventName;
+          opt.textContent = `${p.eventName} (${p.startDate} → ${p.endDate})` + (p.targetPoints ? ` [default: ${p.targetPoints}]` : '');
+          select.appendChild(opt);
+        });
+        if (periods.length > 0) {
+          // Auto-select current active period
+          try {
+            const active = await callFunction('getActivePeriodDates');
+            if (active && active.source) {
+              select.value = active.source;
+            }
+          } catch (e) {}
+          ptCurrentPeriod = select.value;
+        }
+      }
+      select.addEventListener('change', () => { ptCurrentPeriod = select.value; loadPointTargets(); });
+      ptPeriodsLoaded = true;
+      loadPointTargets();
+    } catch (err) {
+      document.getElementById('ptPeriodSelect').innerHTML = '<option>Error loading periods</option>';
+    }
+  }
+
+  async function loadPointTargets() {
+    const container = document.getElementById('ptTargetsList');
+    const period = document.getElementById('ptPeriodSelect').value;
+    ptCurrentPeriod = period;
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-muted)">Loading...</div>';
+    try {
+      const result = await callFunction('getPointTargets', [period]);
+      const targets = (result && result.targets) ? result.targets : {};
+      const sorted = [...membersData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      if (sorted.length === 0) {
+        container.innerHTML = '<div style="padding:12px;color:var(--text-muted)">No members loaded. Load members first.</div>';
+        return;
+      }
+      let html = '<table style="width:100%;border-collapse:collapse;font-size:0.88em;">';
+      html += '<tr style="background:#ede5d5;"><th style="text-align:left;padding:6px 8px;">Member</th><th style="text-align:left;padding:6px 8px;">Custom Target</th></tr>';
+      sorted.forEach(m => {
+        const current = targets[m.name] || '';
+        html += `<tr style="border-bottom:1px solid #eee;">`;
+        html += `<td style="padding:4px 8px;">${escapeHtml(m.name)}</td>`;
+        html += `<td style="padding:4px 8px;"><input type="number" min="0" step="100" class="pt-input" data-member="${escapeAttr(m.name)}" value="${current}" placeholder="default" style="width:120px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-size:0.9em;"></td>`;
+        html += '</tr>';
+      });
+      html += '</table>';
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = '<div style="color:var(--danger);padding:12px">Error: ' + err.message + '</div>';
+    }
+  }
+
+  async function savePointTargets() {
+    const status = document.getElementById('ptStatus');
+    status.textContent = 'Saving...'; status.className = 'status';
+    const inputs = document.querySelectorAll('.pt-input');
+    const targets = {};
+    inputs.forEach(input => {
+      const member = input.dataset.member;
+      const val = parseInt(input.value, 10);
+      if (member && !isNaN(val) && val > 0) targets[member] = val;
+    });
+    try {
+      const result = await callFunction('savePointTargets', [targets, ptCurrentPeriod]);
+      if (result && result.success) {
+        status.textContent = result.message || 'Saved!';
+        status.className = 'status ok';
+      } else {
+        status.textContent = result?.message || 'Failed to save.';
+        status.className = 'status err';
+      }
+    } catch (err) {
+      status.textContent = 'Error: ' + err.message;
+      status.className = 'status err';
+    }
   }
 
   // UTILITIES

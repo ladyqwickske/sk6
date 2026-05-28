@@ -255,7 +255,7 @@
   <div class="stats-row" id="statsRow">
     <div class="stat-card"><div class="stat-value" id="statChests">-</div><div class="stat-label">Chests</div></div>
     <div class="stat-card"><div class="stat-value" id="statPoints">-</div><div class="stat-label">Total Points</div></div>
-    <div class="stat-card"><div class="stat-value" id="statRequired">-</div><div class="stat-label">Required Points</div></div>
+    <div class="stat-card"><div class="stat-value" id="statRequired">-</div><div class="stat-label">Required Points</div><div style="font-size:0.7em;color:var(--text-muted)" id="customTargetNote"></div></div>
     <div class="stat-card"><div class="stat-value" id="statTotalMembers">-</div><div class="stat-label">Total Members</div></div>
     <div class="stat-card"><div class="stat-value" id="statActiveMembers">-</div><div class="stat-label">Active Members</div></div>
   </div>
@@ -306,6 +306,7 @@
   let currentUser = null;
   let currentPeriodDates = null;
   let targetPoints = 3000;
+  let playerTargets = {}; // per-member custom targets: { name: points }
   let currentSplits = {};
   const expandedTypes = new Set();
 
@@ -487,11 +488,23 @@
           ` (${formatPeriodDate(periodResult.start)} → ${formatPeriodDate(periodResult.end)})`;
       }
 
+      // Fetch per-member custom targets for this period
+      playerTargets = {};
+      try {
+        const periodSource = (periodResult && periodResult.source) || '';
+        const ptResult = await callFunction('getPointTargets', [periodSource]);
+        if (ptResult && ptResult.success && ptResult.targets) {
+          playerTargets = ptResult.targets;
+        }
+      } catch (e) { console.warn('Could not load custom targets:', e); }
+
       // Update stats
+      const customCount = Object.keys(playerTargets).length;
       if (statsResult) {
         document.getElementById('statChests').textContent = (statsResult.totalChests || 0).toLocaleString();
         document.getElementById('statPoints').textContent = (statsResult.totalPoints || 0).toLocaleString();
-        document.getElementById('statRequired').textContent = targetPoints.toLocaleString();
+        document.getElementById('statRequired').textContent = targetPoints.toLocaleString() + (customCount > 0 ? '*' : '');
+        document.getElementById('customTargetNote').textContent = customCount > 0 ? `* ${customCount} custom target(s)` : '';
         document.getElementById('statTotalMembers').textContent = statsResult.totalMembers || 0;
         document.getElementById('statActiveMembers').textContent = statsResult.activeMembers || 0;
         updateLastImportedDisplay(statsResult.lastImported || null);
@@ -588,7 +601,8 @@
     playerArray.forEach((player, idx) => {
       const playerName = player.name || player.player;
       const totalPointsVal = player.totalPoints || 0;
-      const pointsClass = totalPointsVal >= targetPoints ? 'player-green' : (totalPointsVal >= targetPoints * 0.9 ? 'player-orange' : 'player-red');
+      const effectiveTarget = (playerTargets[playerName] != null && playerTargets[playerName] > 0) ? playerTargets[playerName] : targetPoints;
+      const pointsClass = totalPointsVal >= effectiveTarget ? 'player-green' : (totalPointsVal >= effectiveTarget * 0.9 ? 'player-orange' : 'player-red');
 
       // Check if member joined after the current viewing period start
       let isNewMember = false;
@@ -613,9 +627,10 @@
       }
 
       const rowClass = isNewMember ? 'player-row new-member-row' : 'player-row';
+      const customTargetLabel = (effectiveTarget !== targetPoints) ? ` <span title="Custom target: ${effectiveTarget.toLocaleString()}" style="font-size:10px;opacity:0.7;">🎯${effectiveTarget.toLocaleString()}</span>` : '';
       rowsHtml += `<div class="${rowClass}">`;
       rowsHtml += `<div class="cell rank-col">${idx + 1}</div>`;
-      rowsHtml += `<div class="cell ${pointsClass}">${escapeHtml(playerName)}${joinDateLabel}</div>`;
+      rowsHtml += `<div class="cell ${pointsClass}">${escapeHtml(playerName)}${joinDateLabel}${customTargetLabel}</div>`;
       rowsHtml += `<div class="cell">${totalPointsVal.toLocaleString()}</div>`;
       rowsHtml += `<div class="cell">${totalChests || '-'}</div>`;
 
