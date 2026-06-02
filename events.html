@@ -210,7 +210,7 @@
             <th onclick="sortEvents('endDate')">End</th>
             <th onclick="sortEvents('participationMethod')">Method</th>
             <th onclick="sortEvents('targetPoints')">Target</th>
-            <th id="eventActionsHeader" style="display:none">Actions</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="eventsTableBody"></tbody>
@@ -458,7 +458,6 @@
     document.getElementById('loginGate').style.display = isLoggedIn ? 'none' : 'block';
     document.getElementById('mainContent').style.display = isLoggedIn ? 'block' : 'none';
     if (isLoggedIn) {
-      document.getElementById('eventActionsHeader').style.display = '';
       document.getElementById('typeActionsHeader').style.display = '';
       if (eventsData.length === 0) loadEvents();
       if (eventTypesData.length === 0) loadEventTypes();
@@ -586,10 +585,11 @@
         <td>${ev.endDate || '-'}</td>
         <td><span class="method-badge ${methodClass}">${ev.participationMethod}</span></td>
         <td>${ev.targetPoints || '-'}</td>
-        ${isLoggedIn ? `<td class="event-actions">
-          <button onclick="editEvent('${escapeAttr(ev.eventName)}')">✏️</button>
-          <button onclick="deleteEvent('${escapeAttr(ev.eventName)}')">🗑️</button>
-        </td>` : ''}
+        <td class="event-actions">
+          ${ev.participationMethod !== 'period-marker' ? `<button onclick="viewEvent('${escapeAttr(ev.eventName)}')" title="View participation">👁️</button>` : ''}
+          ${isLoggedIn ? `<button onclick="editEvent('${escapeAttr(ev.eventName)}')" title="Edit">✏️</button>
+          <button onclick="deleteEvent('${escapeAttr(ev.eventName)}')" title="Delete">🗑️</button>` : ''}
+        </td>
       `;
       tbody.appendChild(tr);
     });
@@ -734,6 +734,23 @@
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
       if (result?.success) loadEventTypes();
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // VIEW EVENT — jump to the right tab
+  function viewEvent(name) {
+    const ev = eventsData.find(e => e.eventName === name);
+    if (!ev) return;
+    if (ev.participationMethod === 'chest-based') {
+      const btn = document.querySelector('.sub-tabs button:nth-child(2)');
+      switchTab('chestEventsTab', btn);
+      document.getElementById('chestEventSelect').value = name;
+      onChestEventSelected();
+    } else if (ev.participationMethod === 'manual-entry') {
+      const btn = document.querySelector('.sub-tabs button:nth-child(3)');
+      switchTab('manualEventsTab', btn);
+      document.getElementById('manualEventSelect').value = name;
+      onManualEventSelected();
+    }
   }
 
   // POPULATE EVENT DROPDOWNS
