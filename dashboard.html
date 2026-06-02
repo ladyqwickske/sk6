@@ -169,6 +169,20 @@
     }
     .ref-btn:hover { background: var(--primary); color: #fff; }
 
+    /* Countdown Timer */
+    .countdown-panel {
+      background: linear-gradient(135deg, #f0ebe0 0%, #f8f4ea 100%);
+      border: 2px solid var(--primary); border-radius: 12px;
+      padding: 16px; margin-bottom: 16px; text-align: center;
+      box-shadow: 0 0 12px rgba(26,122,109,0.15);
+    }
+    .countdown-title { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+    .countdown-parts { display: flex; justify-content: center; gap: 20px; margin: 8px 0; }
+    .countdown-part { display: flex; flex-direction: column; align-items: center; }
+    .countdown-value { font-size: 28px; font-weight: 700; color: var(--primary); font-family: 'Courier New', monospace; line-height: 1; }
+    .countdown-label { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .countdown-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
     /* Loading */
     .loading { text-align: center; padding: 40px; color: var(--text-muted); }
     .spinner {
@@ -249,6 +263,13 @@
     <span class="period-name" id="periodName">Loading...</span>
     <span id="periodDates"></span>
     <div class="last-updated" id="lastImportedDisplay">Last Imported: <span class="no-date">Loading...</span></div>
+  </div>
+
+  <!-- Countdown Timer -->
+  <div class="countdown-panel" id="countdownPanel" style="display:none;">
+    <div class="countdown-title">⏳ Period Ends In</div>
+    <div class="countdown-parts" id="countdownParts"></div>
+    <div class="countdown-subtitle" id="countdownSubtitle"></div>
   </div>
 
   <!-- Stats Row -->
@@ -486,6 +507,12 @@
         document.getElementById('periodName').textContent = periodResult.source || 'Current Period';
         document.getElementById('periodDates').textContent =
           ` (${formatPeriodDate(periodResult.start)} → ${formatPeriodDate(periodResult.end)})`;
+        // Start countdown to period end (17:00 UTC on end date)
+        if (currentPeriod === 'active' && periodResult.end) {
+          updateCountdownTimer(periodResult.end);
+        } else {
+          document.getElementById('countdownPanel').style.display = 'none';
+        }
       }
 
       // Fetch per-member custom targets for this period
@@ -526,6 +553,51 @@
       document.getElementById('loadingDiv').innerHTML =
         '<span style="color: var(--danger)">Failed to load data. Check your configuration.</span>';
     }
+  }
+
+  // ── Countdown Timer ──
+  let countdownInterval = null;
+  function updateCountdownTimer(endDateStr) {
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    const panel = document.getElementById('countdownPanel');
+    const parts = document.getElementById('countdownParts');
+    const subtitle = document.getElementById('countdownSubtitle');
+    if (!panel || !parts) return;
+
+    let endDate;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(endDateStr)) {
+      endDate = new Date(endDateStr + 'T17:00:00Z');
+    } else {
+      endDate = new Date(endDateStr);
+    }
+    if (!endDateStr || isNaN(endDate.getTime())) { panel.style.display = 'none'; return; }
+
+    function render() {
+      const now = new Date();
+      const timeLeft = endDate - now;
+      if (timeLeft <= 0) {
+        panel.style.display = 'block';
+        subtitle.textContent = 'Period has ended.';
+        parts.innerHTML = ['Days','Hours','Minutes','Seconds'].map(l =>
+          `<div class="countdown-part"><span class="countdown-value">00</span><span class="countdown-label">${l}</span></div>`
+        ).join('');
+        clearInterval(countdownInterval); countdownInterval = null;
+        return;
+      }
+      panel.style.display = 'block';
+      subtitle.textContent = '';
+      let s = Math.floor(timeLeft / 1000);
+      const d = Math.floor(s / 86400); s %= 86400;
+      const h = Math.floor(s / 3600); s %= 3600;
+      const m = Math.floor(s / 60); s %= 60;
+      parts.innerHTML =
+        `<div class="countdown-part"><span class="countdown-value">${String(d).padStart(2,'0')}</span><span class="countdown-label">Days</span></div>` +
+        `<div class="countdown-part"><span class="countdown-value">${String(h).padStart(2,'0')}</span><span class="countdown-label">Hours</span></div>` +
+        `<div class="countdown-part"><span class="countdown-value">${String(m).padStart(2,'0')}</span><span class="countdown-label">Minutes</span></div>` +
+        `<div class="countdown-part"><span class="countdown-value">${String(s).padStart(2,'0')}</span><span class="countdown-label">Seconds</span></div>`;
+    }
+    render();
+    countdownInterval = setInterval(render, 1000);
   }
 
   function selectPeriod(period, btn) {
