@@ -262,7 +262,7 @@
     { title: 'Shadow Invasion',   firstStart: '2026-05-23', duration: 2, interval: 5,  color: 'ev-shadow-invasion', category: 'Major Event', description: 'Shadow Invasion — recurring every 5 days.' },
     { title: 'HellForge',         firstStart: '2026-05-20', duration: 2, interval: 5,  color: 'ev-hellforge',       category: 'Major Event', description: 'HellForge — recurring every 5 days.' },
     { title: 'Ragnarok',          firstStart: '2026-05-22', duration: 2, interval: 5,  color: 'ev-ragnarok',        category: 'Major Event', description: 'Ragnarok — recurring every 5 days.' },
-    { title: 'Forest Pass',       firstStart: '2026-05-14', duration: 7, interval: 7,  color: 'ev-forest-pass',     category: 'Weekly Event', description: 'Forest Pass — 7-day event, resets every Wednesday.' },
+    { title: 'Forest Pass',       firstStart: '2026-05-14', duration: 1, interval: 7,  color: 'ev-forest-pass',     category: 'Weekly Event', description: 'Forest Pass — 7-day event, resets every Wednesday.' },
   ];
 
   function parseDateLocal(s) { const p = s.split('-'); return new Date(Date.UTC(+p[0], +p[1]-1, +p[2])); }
@@ -431,17 +431,18 @@
       if (ev.startDate && ev.endDate && dateStr >= ev.startDate && dateStr <= ev.endDate) {
         const dot = document.createElement('span');
         const colorClass = (ev.participationMethod || 'manual-entry').replace(' ', '-');
-        if (ev.eventName === 'Crypting Period') {
+        if (ev.eventName === 'Crypting Period' || ev.eventName === 'Forest Pass') {
           // Multi-day period: show start/bar/end
           if (dateStr === ev.startDate) {
             dot.className = 'event-dot ' + colorClass;
-            dot.textContent = '▶ Crypting Start';
+            dot.textContent = '▶ ' + ev.eventName;
           } else if (dateStr === ev.endDate) {
-            dot.className = 'event-dot ' + colorClass;
-            dot.textContent = '◀ Crypting End';
+            dot.className = 'event-dot ' + colorClass + ' ev-ends';
+            dot.textContent = ev.eventName + ' ◀';
           } else {
-            dot.className = 'event-dot ev-crypting-bar';
-            dot.title = 'Crypting Period';
+            dot.className = 'event-dot ev-crypting-bar ' + colorClass.replace('ev-','ev-') ;
+            dot.title = ev.eventName;
+            dot.style.background = getComputedStyle(document.documentElement).getPropertyValue('--border') || '#d4c9b5';
           }
         } else if (ev.duration > 1 && dateStr === ev.startDate) {
           dot.className = 'event-dot ' + colorClass;
