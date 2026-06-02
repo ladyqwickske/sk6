@@ -817,6 +817,11 @@
     try {
       const result = await callFunction('calculateChestParticipation', [selectedEvent.eventName, selectedEvent.startDate, selectedEvent.endDate, selectedEvent.eventType]);
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
+      if (result?.debugTrace) {
+        console.log('=== CHEST PARTICIPATION DEBUG TRACE ===');
+        result.debugTrace.forEach(line => console.log(line));
+        console.log('=== END TRACE ===');
+      }
       if (result?.success) onChestEventSelected();
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
