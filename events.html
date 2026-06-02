@@ -120,6 +120,9 @@
     .checkbox-item input[type="checkbox"] { cursor: pointer; accent-color: var(--primary); }
     .checkbox-item label { margin: 0; font-weight: normal; color: var(--text); cursor: pointer; font-size: 0.9em; }
 
+    .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .tab-panel { display: block; }
+
     .loading { text-align: center; padding: 40px; color: var(--text-muted); }
     .spinner {
       display: inline-block; width: 24px; height: 24px;
@@ -185,56 +188,17 @@
   <h1>Events</h1>
   <p class="subtitle">Event Management &amp; Participation Tracking</p>
 
-  <!-- Sub-tabs: Events / Event Types -->
-  <div class="sub-tabs">
-    <button class="active" onclick="switchTab('events', this)">Events</button>
-    <button onclick="switchTab('types', this)">Event Types</button>
+  <!-- Inner Tabs -->
+  <div class="sub-tabs" id="subTabs">
+    <button class="active" onclick="switchTab('manageTab', this)">📋 Manage</button>
+    <button onclick="switchTab('chestEventsTab', this)">📊 Chest Events</button>
+    <button onclick="switchTab('manualEventsTab', this)">✏️ Manual Events</button>
+    <button onclick="switchTab('createTab', this)">➕ Create Event</button>
+    <button onclick="switchTab('typesTab', this)">⚙️ Event Types</button>
   </div>
 
-  <!-- Add Event Form (admin only) -->
-  <div class="admin-panel" id="adminPanel">
-    <h3 id="eventFormTitle">➕ Add New Event</h3>
-    <div class="form-row">
-      <input type="text" id="eventName" placeholder="Event Name">
-      <select id="eventType"><option value="">Select type...</option></select>
-      <input type="date" id="eventStartDate">
-      <input type="date" id="eventEndDate">
-      <input type="number" id="eventTargetPoints" placeholder="Target Points">
-    </div>
-    <div class="form-row">
-      <button class="btn" onclick="saveEvent()">Save Event</button>
-      <button class="btn secondary" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">Cancel</button>
-    </div>
-
-    <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
-    <h3 style="color:var(--primary); margin-bottom:8px;">📅 Generate Upcoming Events from Calendar</h3>
-    <p style="margin-bottom:10px; color:var(--text-muted); font-size:0.85em;">Automatically create events based on the recurring calendar schedule.</p>
-    <div class="form-row" style="align-items:center;">
-      <button class="btn" id="generateEventsBtn" onclick="generateCalendarEvents()" style="background:var(--success); color:#fff;">📅 Generate Events</button>
-      <select id="generateDaysSelect" style="flex:0.5; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
-        <option value="7">Next 7 days</option>
-        <option value="14">Next 14 days</option>
-        <option value="30" selected>Next 30 days</option>
-        <option value="60">Next 60 days</option>
-      </select>
-    </div>
-    <div style="margin:8px 0; padding:8px 12px; background:#f8f4ea; border-radius:8px; border:1px solid var(--border);">
-      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-        <span style="font-size:0.85em; color:var(--text-muted); font-weight:600;">Generate for:</span>
-        <label style="font-size:0.8em; color:var(--text-muted); cursor:pointer;"><input type="checkbox" id="genSelectAll" checked onchange="document.querySelectorAll('.gen-type-cb').forEach(cb=>cb.checked=this.checked)"> All</label>
-      </div>
-      <div id="genEventTypes" style="display:flex; flex-wrap:wrap; gap:4px 12px;">
-        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Active Period" checked> Active Period</label>
-        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Ancients" checked> Ancients</label>
-        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Ragnarok" checked> Ragnarok</label>
-        <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Forest Chests" checked> Forest Chests</label>
-      </div>
-    </div>
-    <div id="generateStatus" style="font-size:0.85em; margin-top:6px;"></div>
-  </div>
-
-  <!-- Events List -->
-  <div id="eventsTab">
+  <!-- ===== MANAGE EVENTS TAB ===== -->
+  <div class="tab-panel" id="manageTab">
     <div class="loading" id="eventsLoading"><div class="spinner"></div><br>Loading events...</div>
     <div class="table-container" id="eventsTableContainer" style="display:none">
       <table>
@@ -254,9 +218,107 @@
     </div>
   </div>
 
-  <!-- Event Types Tab -->
-  <div id="typesTab" style="display:none">
-    <div class="admin-panel" id="typeAdminPanel">
+  <!-- ===== CHEST EVENTS TAB ===== -->
+  <div class="tab-panel" id="chestEventsTab" style="display:none">
+    <h3 style="color:var(--primary); margin-bottom:12px;">📊 Chest-Based Events</h3>
+    <p style="margin-bottom:12px; color:var(--text-muted); font-size:0.9em;">Select an event to view or recalculate chest-based participation.</p>
+    <div class="form-row" style="margin-bottom:12px;">
+      <select id="chestEventSelect" onchange="onChestEventSelected()" style="flex:1; min-width:200px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
+        <option value="">-- Select Chest Event --</option>
+      </select>
+      <button class="btn" id="chestRecalcBtn" style="display:none" onclick="calculateParticipation()">🔄 Recalculate</button>
+      <button class="btn secondary" id="chestFillBtn" style="display:none" onclick="fillNonParticipants()">Fill Non-Participants</button>
+    </div>
+    <div class="participation-section" id="chestParticipationSection" style="display:none">
+      <h3 id="chestParticipationTitle">Participation</h3>
+      <div class="table-container">
+        <table>
+          <thead><tr id="chestParticipationHeaders"></tr></thead>
+          <tbody id="chestParticipationBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MANUAL EVENTS TAB ===== -->
+  <div class="tab-panel" id="manualEventsTab" style="display:none">
+    <h3 style="color:var(--primary); margin-bottom:12px;">✏️ Manual Events</h3>
+    <p style="margin-bottom:12px; color:var(--text-muted); font-size:0.9em;">Manually track participation for events.</p>
+    <div class="form-row" style="margin-bottom:12px;">
+      <select id="manualEventSelect" onchange="onManualEventSelected()" style="flex:1; min-width:200px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
+        <option value="">-- Select Manual Event --</option>
+      </select>
+    </div>
+    <div id="manualEntryForm" style="display:none; margin-bottom:12px; padding:12px; background:#fff; border:1px solid var(--border); border-radius:8px;">
+      <h4 style="color:var(--primary); margin-bottom:8px;">Add Entry</h4>
+      <div class="form-row">
+        <select id="manualMember" style="flex:1; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
+          <option value="">Select member...</option>
+        </select>
+        <input type="number" id="manualPoints" placeholder="Points" style="flex:0.5; min-width:80px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;" onkeypress="if(event.key==='Enter') saveManualEntry()">
+        <button class="btn" onclick="saveManualEntry()">💾 Save</button>
+        <button class="btn secondary" onclick="fillNonParticipants()">Fill Non-Participants</button>
+      </div>
+      <div id="manualEntryStatus" style="font-size:0.85em; margin-top:6px;"></div>
+    </div>
+    <div class="participation-section" id="manualParticipationSection" style="display:none">
+      <h3 id="manualParticipationTitle">Participation</h3>
+      <div class="table-container">
+        <table>
+          <thead><tr id="manualParticipationHeaders"></tr></thead>
+          <tbody id="manualParticipationBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CREATE EVENT TAB ===== -->
+  <div class="tab-panel" id="createTab" style="display:none">
+    <div class="admin-panel visible" id="adminPanel">
+      <h3 id="eventFormTitle">➕ Create New Event</h3>
+      <div class="form-row">
+        <input type="text" id="eventName" placeholder="Event Name">
+        <select id="eventType"><option value="">Select type...</option></select>
+        <input type="date" id="eventStartDate">
+        <input type="date" id="eventEndDate">
+        <input type="number" id="eventTargetPoints" placeholder="Target Points">
+      </div>
+      <div class="form-row">
+        <button class="btn" onclick="saveEvent()">Save Event</button>
+        <button class="btn secondary" id="cancelEditBtn" style="display:none" onclick="cancelEdit()">Cancel</button>
+      </div>
+
+      <hr style="border:none; border-top:1px solid var(--border); margin:16px 0;">
+      <h3 style="color:var(--primary); margin-bottom:8px;">📅 Generate Upcoming Events from Calendar</h3>
+      <p style="margin-bottom:10px; color:var(--text-muted); font-size:0.85em;">Automatically create events based on the recurring calendar schedule.</p>
+      <div class="form-row" style="align-items:center;">
+        <button class="btn" id="generateEventsBtn" onclick="generateCalendarEvents()" style="background:var(--success); color:#fff;">📅 Generate Events</button>
+        <select id="generateDaysSelect" style="flex:0.5; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
+          <option value="7">Next 7 days</option>
+          <option value="14">Next 14 days</option>
+          <option value="30" selected>Next 30 days</option>
+          <option value="60">Next 60 days</option>
+        </select>
+      </div>
+      <div style="margin:8px 0; padding:8px 12px; background:#f8f4ea; border-radius:8px; border:1px solid var(--border);">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+          <span style="font-size:0.85em; color:var(--text-muted); font-weight:600;">Generate for:</span>
+          <label style="font-size:0.8em; color:var(--text-muted); cursor:pointer;"><input type="checkbox" id="genSelectAll" checked onchange="document.querySelectorAll('.gen-type-cb').forEach(cb=>cb.checked=this.checked)"> All</label>
+        </div>
+        <div id="genEventTypes" style="display:flex; flex-wrap:wrap; gap:4px 12px;">
+          <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Active Period" checked> Active Period</label>
+          <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Ancients" checked> Ancients</label>
+          <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Ragnarok" checked> Ragnarok</label>
+          <label style="font-size:0.85em; color:var(--text); cursor:pointer;"><input type="checkbox" class="gen-type-cb" value="Forest Chests" checked> Forest Chests</label>
+        </div>
+      </div>
+      <div id="generateStatus" style="font-size:0.85em; margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <!-- ===== EVENT TYPES TAB ===== -->
+  <div class="tab-panel" id="typesTab" style="display:none">
+    <div class="admin-panel visible" id="typeAdminPanel">
       <h3 id="typeFormTitle">➕ Add Event Type</h3>
       <div class="form-row">
         <input type="text" id="typeName" placeholder="Type Name">
@@ -296,32 +358,6 @@
     </div>
   </div>
 
-  <!-- Participation Detail -->
-  <div class="participation-section" id="participationSection" style="display:none">
-    <h3 id="participationTitle">Participation</h3>
-    <div class="form-row" id="participationActions" style="display:none">
-      <button class="btn" onclick="calculateParticipation()">🔄 Recalculate</button>
-      <button class="btn secondary" onclick="fillNonParticipants()">Fill Non-Participants</button>
-    </div>
-    <!-- Manual Entry Form (shown for manual-entry events) -->
-    <div id="manualEntryForm" style="display:none; margin: 12px 0; padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 8px;">
-      <h4 style="color: var(--primary); margin-bottom: 8px;">✏️ Add Manual Entry</h4>
-      <div class="form-row">
-        <select id="manualMember" style="flex:1; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
-          <option value="">Select member...</option>
-        </select>
-        <input type="number" id="manualPoints" placeholder="Points" style="flex:0.5; min-width:80px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;" onkeypress="if(event.key==='Enter') saveManualEntry()">
-        <button class="btn" onclick="saveManualEntry()">💾 Save</button>
-      </div>
-      <div id="manualEntryStatus" style="font-size:0.85em; margin-top:6px;"></div>
-    </div>
-    <div class="table-container">
-      <table>
-        <thead><tr id="participationHeaders"></tr></thead>
-        <tbody id="participationBody"></tbody>
-      </table>
-    </div>
-  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -356,7 +392,7 @@
         return partSortAsc ? String(va || '').localeCompare(String(vb || '')) : String(vb || '').localeCompare(String(va || ''));
       });
     }
-    document.getElementById('participationBody').innerHTML = sorted.map(row =>
+    document.getElementById(currentPartBodyId).innerHTML = sorted.map(row =>
       '<tr>' + headers.map(h => `<td>${escapeHtml(String(row[h] || ''))}</td>`).join('') + '</tr>'
     ).join('');
   }
@@ -422,11 +458,8 @@
     document.getElementById('loginGate').style.display = isLoggedIn ? 'none' : 'block';
     document.getElementById('mainContent').style.display = isLoggedIn ? 'block' : 'none';
     if (isLoggedIn) {
-      document.getElementById('adminPanel').classList.add('visible');
-      document.getElementById('typeAdminPanel').classList.add('visible');
       document.getElementById('eventActionsHeader').style.display = '';
       document.getElementById('typeActionsHeader').style.display = '';
-      document.getElementById('participationActions').style.display = 'flex';
       if (eventsData.length === 0) loadEvents();
       if (eventTypesData.length === 0) loadEventTypes();
       if (membersData.length === 0) loadMembers();
@@ -436,12 +469,11 @@
   }
 
   // TABS
-  function switchTab(tab, btn) {
+  function switchTab(tabId, btn) {
     document.querySelectorAll('.sub-tabs button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('eventsTab').style.display = tab === 'events' ? 'block' : 'none';
-    document.getElementById('typesTab').style.display = tab === 'types' ? 'block' : 'none';
-    document.getElementById('adminPanel').style.display = (tab === 'events' && isLoggedIn) ? 'block' : 'none';
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+    document.getElementById(tabId).style.display = 'block';
   }
 
   // LOAD DATA
@@ -547,8 +579,6 @@
       const methodClass = ev.participationMethod === 'chest-based' ? 'method-chest' :
         ev.participationMethod === 'period-marker' ? 'method-period' : 'method-manual';
       const tr = document.createElement('tr');
-      tr.style.cursor = 'pointer';
-      tr.onclick = () => showParticipation(ev);
       tr.innerHTML = `
         <td><strong>${escapeHtml(ev.eventName)}</strong></td>
         <td>${escapeHtml(ev.eventType)}</td>
@@ -556,13 +586,16 @@
         <td>${ev.endDate || '-'}</td>
         <td><span class="method-badge ${methodClass}">${ev.participationMethod}</span></td>
         <td>${ev.targetPoints || '-'}</td>
-        ${isLoggedIn ? `<td class="event-actions" onclick="event.stopPropagation()">
+        ${isLoggedIn ? `<td class="event-actions">
           <button onclick="editEvent('${escapeAttr(ev.eventName)}')">✏️</button>
           <button onclick="deleteEvent('${escapeAttr(ev.eventName)}')">🗑️</button>
         </td>` : ''}
       `;
       tbody.appendChild(tr);
     });
+
+    // Populate chest/manual event dropdowns
+    populateEventDropdowns();
   }
 
   function renderEventTypes() {
@@ -622,6 +655,9 @@
     document.getElementById('eventTargetPoints').value = ev.targetPoints || '';
     document.getElementById('eventFormTitle').textContent = '✏️ Edit Event';
     document.getElementById('cancelEditBtn').style.display = 'inline';
+    // Switch to Create tab to show the form
+    const createBtn = document.querySelector('.sub-tabs button:nth-child(4)');
+    switchTab('createTab', createBtn);
   }
 
   function cancelEdit() {
@@ -631,7 +667,7 @@
     document.getElementById('eventStartDate').value = '';
     document.getElementById('eventEndDate').value = '';
     document.getElementById('eventTargetPoints').value = '';
-    document.getElementById('eventFormTitle').textContent = '➕ Add New Event';
+    document.getElementById('eventFormTitle').textContent = '➕ Create New Event';
     document.getElementById('cancelEditBtn').style.display = 'none';
   }
 
@@ -700,47 +736,71 @@
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 
-  // PARTICIPATION
-  async function showParticipation(ev) {
-    selectedEvent = ev;
-    document.getElementById('participationSection').style.display = 'block';
-    document.getElementById('participationTitle').textContent = `📊 ${ev.eventName} — Participation`;
+  // POPULATE EVENT DROPDOWNS
+  function populateEventDropdowns() {
+    const chestSelect = document.getElementById('chestEventSelect');
+    const manualSelect = document.getElementById('manualEventSelect');
+    const chestEvents = eventsData.filter(e => e.participationMethod === 'chest-based');
+    const manualEvents = eventsData.filter(e => e.participationMethod === 'manual-entry');
 
-    // Show manual entry form for manual-entry events when logged in
-    const manualForm = document.getElementById('manualEntryForm');
-    if (manualForm) {
-      manualForm.style.display = (ev.participationMethod === 'manual-entry' && isLoggedIn) ? 'block' : 'none';
-      document.getElementById('manualEntryStatus').textContent = '';
-      if (membersData.length === 0 && isLoggedIn) loadMembers();
-    }
+    chestSelect.innerHTML = '<option value="">-- Select Chest Event --</option>' +
+      chestEvents.map(e => `<option value="${escapeAttr(e.eventName)}">${escapeHtml(e.eventName)} (${e.startDate} → ${e.endDate})</option>`).join('');
+    manualSelect.innerHTML = '<option value="">-- Select Manual Event --</option>' +
+      manualEvents.map(e => `<option value="${escapeAttr(e.eventName)}">${escapeHtml(e.eventName)} (${e.startDate} → ${e.endDate})</option>`).join('');
+  }
 
-    if (ev.participationMethod === 'period-marker') {
-      document.getElementById('participationBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Period markers don\'t track participation</td></tr>';
-      document.getElementById('participationHeaders').innerHTML = '';
-      return;
-    }
+  // CHEST EVENT TAB
+  function onChestEventSelected() {
+    const name = document.getElementById('chestEventSelect').value;
+    const ev = eventsData.find(e => e.eventName === name);
+    selectedEvent = ev || null;
+    document.getElementById('chestRecalcBtn').style.display = ev ? 'inline' : 'none';
+    document.getElementById('chestFillBtn').style.display = ev ? 'inline' : 'none';
+    if (ev) loadParticipationInto(ev, 'chestParticipationSection', 'chestParticipationTitle', 'chestParticipationHeaders', 'chestParticipationBody');
+    else document.getElementById('chestParticipationSection').style.display = 'none';
+  }
 
+  // MANUAL EVENT TAB
+  function onManualEventSelected() {
+    const name = document.getElementById('manualEventSelect').value;
+    const ev = eventsData.find(e => e.eventName === name);
+    selectedEvent = ev || null;
+    document.getElementById('manualEntryForm').style.display = ev ? 'block' : 'none';
+    document.getElementById('manualEntryStatus').textContent = '';
+    if (ev) loadParticipationInto(ev, 'manualParticipationSection', 'manualParticipationTitle', 'manualParticipationHeaders', 'manualParticipationBody');
+    else document.getElementById('manualParticipationSection').style.display = 'none';
+  }
+
+  // GENERIC PARTICIPATION LOADER
+  async function loadParticipationInto(ev, sectionId, titleId, headersId, bodyId) {
+    const section = document.getElementById(sectionId);
+    section.style.display = 'block';
+    document.getElementById(titleId).textContent = `📊 ${ev.eventName} — Participation`;
     try {
       const result = await callFunction('getEventParticipation', [ev.eventName]);
       if (result && result.success && result.data.length > 0) {
         const headers = Object.keys(result.data[0]);
-        document.getElementById('participationHeaders').innerHTML = headers.map(h => `<th onclick="sortParticipation('${escapeHtml(h)}')">${escapeHtml(h)}</th>`).join('');
+        document.getElementById(headersId).innerHTML = headers.map(h => `<th onclick="sortParticipation('${escapeHtml(h)}')">${escapeHtml(h)}</th>`).join('');
         lastPartData = result.data;
         lastPartHeaders = headers;
+        // Use correct body id for rendering
+        currentPartBodyId = bodyId;
         renderParticipation(result.data, headers);
       } else {
-        document.getElementById('participationHeaders').innerHTML = '';
-        document.getElementById('participationBody').innerHTML = '<tr><td style="text-align:center;color:var(--text-muted)">No participation data yet</td></tr>';
+        document.getElementById(headersId).innerHTML = '';
+        document.getElementById(bodyId).innerHTML = '<tr><td style="text-align:center;color:var(--text-muted)">No participation data yet</td></tr>';
       }
     } catch (err) { showToast('Error loading participation', 'error'); }
   }
+
+  let currentPartBodyId = 'chestParticipationBody';
 
   async function calculateParticipation() {
     if (!selectedEvent) return;
     try {
       const result = await callFunction('calculateChestParticipation', [selectedEvent.eventName, selectedEvent.startDate, selectedEvent.endDate, selectedEvent.eventType]);
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
-      if (result?.success) showParticipation(selectedEvent);
+      if (result?.success) onChestEventSelected();
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 
@@ -749,7 +809,7 @@
     try {
       const result = await callFunction('calculateManualNonParticipants', [selectedEvent.eventName]);
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
-      if (result?.success) showParticipation(selectedEvent);
+      if (result?.success) onManualEventSelected();
     } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 
@@ -786,7 +846,7 @@
         status.textContent = result.message || 'Saved!'; status.style.color = 'var(--success)';
         document.getElementById('manualPoints').value = '';
         document.getElementById('manualMember').value = '';
-        showParticipation(selectedEvent);
+        onManualEventSelected();
       } else {
         status.textContent = result?.message || 'Failed to save.'; status.style.color = 'var(--danger)';
       }
