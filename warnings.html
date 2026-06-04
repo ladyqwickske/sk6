@@ -528,7 +528,7 @@
 
   function renderSummary() {
     const grid = document.getElementById('summaryGrid');
-    const entries = Object.entries(warningSummary);
+    let entries = Object.entries(warningSummary).filter(([name]) => memberNames.includes(name));
     document.getElementById('summaryCount').textContent = entries.length;
     if (entries.length === 0) {
       grid.innerHTML = '<div class="no-data">No warnings issued yet. 🎉</div>';
@@ -594,7 +594,7 @@
     const typeFilter = document.getElementById('filterType').value;
     const list = document.getElementById('warnList');
 
-    let filtered = allWarnings;
+    let filtered = allWarnings.filter(w => memberNames.includes(w.member));
     if (memberFilter) filtered = filtered.filter(w => w.member === memberFilter);
     if (typeFilter) filtered = filtered.filter(w => w.type === typeFilter);
 
