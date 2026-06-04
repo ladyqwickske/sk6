@@ -76,6 +76,22 @@
     .site-logo { width: 56px; height: 56px; display: block; margin: 0 auto 6px auto; }
     .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.85em; }
 
+    /* Content Tabs */
+    .content-tabs {
+      display: flex; gap: 0; margin-bottom: 18px; border-bottom: 2px solid var(--border);
+    }
+    .content-tabs button {
+      flex: 1; background: none; border: none; padding: 12px 8px; cursor: pointer;
+      font-size: 0.92em; font-weight: 600; color: var(--text-muted);
+      border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s;
+    }
+    .content-tabs button:hover { color: var(--primary); background: rgba(26,122,109,0.04); }
+    .content-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn-row .btn { flex: 1; min-width: 160px; }
+
     /* Warning Form */
     .warn-form {
       background: var(--warn-bg); border: 1px solid var(--warn-border);
@@ -246,69 +262,82 @@
 
 <div class="container" id="mainContent" style="display:none">
   <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
-  <h1>⚠️ Member Warnings</h1>
+  <h1><img src="warning.png" alt="Warning" class="tab-icon" style="height: 64px; vertical-align: middle; margin-right: 8px;"> Member Warnings</h1>
   <p class="subtitle">Track and manage performance warnings</p>
 
-  <!-- Add Warning Form -->
-  <div class="warn-form" id="warnForm">
-    <h3>➕ Issue a Warning</h3>
-    <div class="form-grid">
-      <div>
-        <label for="warnMember">Member</label>
-        <select id="warnMember"><option value="">Loading...</option></select>
+  <!-- Content Tabs -->
+  <div class="content-tabs">
+    <button class="active" onclick="switchTab('overview')">📋 Overview</button>
+    <button onclick="switchTab('issue')">➕ Issue Warning</button>
+    <button onclick="switchTab('history')">📜 History</button>
+  </div>
+
+  <!-- Tab 1: Overview -->
+  <div class="tab-panel active" id="tab-overview">
+    <div class="summary-section" id="summarySection">
+      <h3>Members with Warnings (<span id="summaryCount">0</span>)</h3>
+      <div class="summary-table-wrap" id="summaryGrid">
+        <div class="loading"><span class="spinner"></span> Loading...</div>
       </div>
-      <div>
-        <label for="warnNumber">Warning #</label>
-        <select id="warnNumber">
-          <option value="1">1st Warning</option>
-          <option value="2">2nd Warning</option>
-          <option value="3">3rd Warning</option>
-          <option value="4">4th Warning</option>
-          <option value="5">5th Warning (Final)</option>
+    </div>
+  </div>
+
+  <!-- Tab 2: Issue Warning -->
+  <div class="tab-panel" id="tab-issue">
+    <div class="warn-form" id="warnForm">
+      <h3>Issue a Warning</h3>
+      <div class="form-grid">
+        <div>
+          <label for="warnMember">Member</label>
+          <select id="warnMember"><option value="">Loading...</option></select>
+        </div>
+        <div>
+          <label for="warnNumber">Warning #</label>
+          <select id="warnNumber">
+            <option value="1">1st Warning</option>
+            <option value="2">2nd Warning</option>
+            <option value="3">3rd Warning</option>
+            <option value="4">4th Warning</option>
+            <option value="5">5th Warning (Final)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid full">
+        <div>
+          <label for="warnType">Reason</label>
+          <select id="warnType"><option value="">Loading...</option></select>
+        </div>
+      </div>
+      <div class="form-grid full">
+        <div>
+          <label for="warnComment">Comment (optional)</label>
+          <textarea id="warnComment" placeholder="Add details about the warning..."></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn danger" id="submitWarnBtn" onclick="submitWarning()" disabled>⚠️ Issue Warning</button>
+        <button class="btn" id="autoGenBtn" onclick="autoGenTargetWarnings()" disabled style="background:#e67e22;">🎯 Auto-warn Custom Targets</button>
+      </div>
+      <div id="formStatus" style="margin-top:8px;font-size:0.85em;"></div>
+    </div>
+  </div>
+
+  <!-- Tab 3: History -->
+  <div class="tab-panel" id="tab-history">
+    <div class="history-section" id="historySection">
+      <h3>Warning History</h3>
+      <div class="filter-row">
+        <select id="filterMember" onchange="renderHistory()">
+          <option value="">All Members</option>
+        </select>
+        <select id="filterType" onchange="renderHistory()">
+          <option value="">All Types</option>
         </select>
       </div>
+      <ul class="warn-list" id="warnList">
+        <li class="loading"><span class="spinner"></span> Loading...</li>
+      </ul>
     </div>
-    <div class="form-grid full">
-      <div>
-        <label for="warnType">Reason</label>
-        <select id="warnType"><option value="">Loading...</option></select>
-      </div>
-    </div>
-    <div class="form-grid full">
-      <div>
-        <label for="warnComment">Comment (optional)</label>
-        <textarea id="warnComment" placeholder="Add details about the warning..."></textarea>
-      </div>
-    </div>
-    <button class="btn danger" id="submitWarnBtn" onclick="submitWarning()" disabled>⚠️ Issue Warning</button>
-    <div style="margin-top:10px;">
-      <button class="btn" id="autoGenBtn" onclick="autoGenTargetWarnings()" disabled style="background:#e67e22;font-size:0.85em;width:auto;padding:10px 16px;">🎯 Auto-warn members with custom targets</button>
-    </div>
-    <div id="formStatus" style="margin-top:8px;font-size:0.85em;"></div>
-  </div>
-
-  <!-- Summary: Members with Warnings -->
-  <div class="summary-section" id="summarySection">
-    <h3>📋 Members with Warnings (<span id="summaryCount">0</span>)</h3>
-    <div class="summary-table-wrap" id="summaryGrid">
-      <div class="loading"><span class="spinner"></span> Loading...</div>
-    </div>
-  </div>
-
-  <!-- Warning History -->
-  <div class="history-section" id="historySection">
-    <h3>📜 Warning History</h3>
-    <div class="filter-row">
-      <select id="filterMember" onchange="renderHistory()">
-        <option value="">All Members</option>
-      </select>
-      <select id="filterType" onchange="renderHistory()">
-        <option value="">All Types</option>
-      </select>
-    </div>
-    <ul class="warn-list" id="warnList">
-      <li class="loading"><span class="spinner"></span> Loading...</li>
-    </ul>
   </div>
 </div>
 
@@ -582,10 +611,19 @@
     renderSummary();
   }
 
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.content-tabs button').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    const btns = document.querySelectorAll('.content-tabs button');
+    const idx = tab === 'overview' ? 0 : tab === 'issue' ? 1 : 2;
+    btns[idx].classList.add('active');
+  }
+
   function filterByMember(name) {
     document.getElementById('filterMember').value = name;
     renderHistory();
-    document.getElementById('historySection').scrollIntoView({ behavior: 'smooth' });
+    switchTab('history');
   }
 
   // ===== RENDER HISTORY =====
