@@ -114,27 +114,34 @@
     /* Summary Cards */
     .summary-section { margin-top: 20px; }
     .summary-section h3 { color: var(--primary); margin-bottom: 10px; font-size: 1em; }
-    .summary-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px;
+    .summary-table-wrap { overflow-x: auto; }
+    .summary-table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
+    .summary-table th {
+      background: #ede5d5; color: var(--primary); padding: 10px 8px;
+      text-align: left; border-bottom: 2px solid var(--accent); cursor: pointer;
+      white-space: nowrap; user-select: none; -webkit-user-select: none;
     }
-    .summary-card {
-      background: #fff; border: 1px solid var(--border); border-radius: 10px;
-      padding: 14px; display: flex; align-items: center; gap: 12px;
-      transition: box-shadow 0.2s;
+    .summary-table th:hover { background: #ddd5c5; }
+    .summary-table th .sort-arrow { font-size: 0.7em; margin-left: 4px; opacity: 0.4; }
+    .summary-table th.sorted .sort-arrow { opacity: 1; }
+    .summary-table td { padding: 8px; border-bottom: 1px solid #eee; }
+    .summary-table tr:hover { background: rgba(26,122,109,0.05); }
+    .summary-table .warn-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 10px;
+      font-size: 0.8em; font-weight: 700; color: #fff; min-width: 28px; text-align: center;
     }
-    .summary-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .warn-count {
-      min-width: 44px; height: 44px; border-radius: 50%; display: flex;
-      align-items: center; justify-content: center; font-size: 1.3em;
-      font-weight: 800; color: #fff; flex-shrink: 0;
+    .warn-badge.w1 { background: var(--accent); }
+    .warn-badge.w2 { background: #e67e22; }
+    .warn-badge.w3 { background: var(--danger); }
+    .warn-badge.w4 { background: #7b1fa2; }
+    .summary-table .action-btns { display: flex; gap: 4px; }
+    .summary-table .action-btns button {
+      background: none; border: 1px solid var(--border); border-radius: 4px;
+      padding: 3px 6px; cursor: pointer; font-size: 0.8em;
     }
-    .warn-count.w1 { background: var(--accent); }
-    .warn-count.w2 { background: #e67e22; }
-    .warn-count.w3 { background: var(--danger); }
-    .warn-count.w4 { background: #7b1fa2; }
-    .summary-card .info { flex: 1; min-width: 0; }
-    .summary-card .name { font-weight: 700; font-size: 0.95em; color: var(--text); }
-    .summary-card .meta { font-size: 0.75em; color: var(--text-muted); margin-top: 2px; word-break: break-word; }
+    .summary-table .action-btns .clear-btn { border-color: var(--danger); color: var(--danger); }
+    .summary-table .action-btns button:hover { background: #f5f0e4; }
+    .summary-table .type-tags { font-size: 0.75em; color: var(--text-muted); }
 
     /* Warning History */
     .history-section { margin-top: 24px; }
@@ -282,8 +289,8 @@
 
   <!-- Summary: Members with Warnings -->
   <div class="summary-section" id="summarySection">
-    <h3>📋 Members with Warnings</h3>
-    <div class="summary-grid" id="summaryGrid">
+    <h3>📋 Members with Warnings (<span id="summaryCount">0</span>)</h3>
+    <div class="summary-table-wrap" id="summaryGrid">
       <div class="loading"><span class="spinner"></span> Loading...</div>
     </div>
   </div>
@@ -516,27 +523,63 @@
   }
 
   // ===== RENDER SUMMARY =====
+  let summarySortCol = 'level';
+  let summarySortAsc = false;
+
   function renderSummary() {
     const grid = document.getElementById('summaryGrid');
-    const entries = Object.entries(warningSummary).sort((a, b) => b[1].maxWarningNum - a[1].maxWarningNum || a[0].localeCompare(b[0]));
+    const entries = Object.entries(warningSummary);
+    document.getElementById('summaryCount').textContent = entries.length;
     if (entries.length === 0) {
       grid.innerHTML = '<div class="no-data">No warnings issued yet. 🎉</div>';
       return;
     }
-    let html = '';
+
+    // Sort
+    entries.sort((a, b) => {
+      let va, vb;
+      if (summarySortCol === 'name') { va = a[0].toLowerCase(); vb = b[0].toLowerCase(); return summarySortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
+      if (summarySortCol === 'level') { va = a[1].maxWarningNum; vb = b[1].maxWarningNum; }
+      else if (summarySortCol === 'count') { va = a[1].count; vb = b[1].count; }
+      else if (summarySortCol === 'date') { va = a[1].latestDate; vb = b[1].latestDate; return summarySortAsc ? (va > vb ? 1 : -1) : (vb > va ? 1 : -1); }
+      else { va = a[1].maxWarningNum; vb = b[1].maxWarningNum; }
+      return summarySortAsc ? va - vb : vb - va;
+    });
+
+    const arrow = (col) => '<span class="sort-arrow">' + (summarySortCol === col ? (summarySortAsc ? '▲' : '▼') : '⇅') + '</span>';
+    const sorted = (col) => summarySortCol === col ? ' sorted' : '';
+
+    let html = '<table class="summary-table"><thead><tr>' +
+      '<th class="' + sorted('name') + '" onclick="sortSummary(\'name\')">' + 'Member' + arrow('name') + '</th>' +
+      '<th class="' + sorted('level') + '" onclick="sortSummary(\'level\')" style="text-align:center">' + 'Level' + arrow('level') + '</th>' +
+      '<th class="' + sorted('count') + '" onclick="sortSummary(\'count\')" style="text-align:center">' + 'Total' + arrow('count') + '</th>' +
+      '<th>' + 'Reasons</th>' +
+      '<th class="' + sorted('date') + '" onclick="sortSummary(\'date\')">' + 'Latest' + arrow('date') + '</th>' +
+      '<th style="width:70px"></th>' +
+      '</tr></thead><tbody>';
+
     entries.forEach(([name, data]) => {
       const wClass = data.maxWarningNum >= 4 ? 'w4' : data.maxWarningNum >= 3 ? 'w3' : data.maxWarningNum >= 2 ? 'w2' : 'w1';
-      html += '<div class="summary-card">' +
-        '<div class="warn-count ' + wClass + '">' + data.maxWarningNum + '</div>' +
-        '<div class="info"><div class="name">' + esc(name) + '</div>' +
-        '<div class="meta">' + data.count + ' warning' + (data.count !== 1 ? 's' : '') + ' \u00b7 ' + data.types.join(', ') + '</div>' +
-        '<div class="meta">Latest: ' + data.latestDate + '</div></div>' +
-        '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
-        '<button onclick="filterByMember(\'' + esc(name) + '\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.75em" title="View">📜</button>' +
-        '<button onclick="clearMemberWarningsClick(\'' + esc(name) + '\')" style="background:none;border:1px solid var(--danger);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.75em;color:var(--danger)" title="Clear all warnings">🧹</button>' +
-        '</div></div>';
+      html += '<tr>' +
+        '<td style="font-weight:600">' + esc(name) + '</td>' +
+        '<td style="text-align:center"><span class="warn-badge ' + wClass + '">' + data.maxWarningNum + '</span></td>' +
+        '<td style="text-align:center">' + data.count + '</td>' +
+        '<td class="type-tags">' + data.types.map(t => esc(t)).join(', ') + '</td>' +
+        '<td style="font-size:0.82em">' + data.latestDate + '</td>' +
+        '<td><div class="action-btns">' +
+          '<button onclick="filterByMember(\'' + esc(name) + '\')" title="View history">📜</button>' +
+          '<button class="clear-btn" onclick="clearMemberWarningsClick(\'' + esc(name) + '\')" title="Clear all">🧹</button>' +
+        '</div></td></tr>';
     });
+
+    html += '</tbody></table>';
     grid.innerHTML = html;
+  }
+
+  function sortSummary(col) {
+    if (summarySortCol === col) { summarySortAsc = !summarySortAsc; }
+    else { summarySortCol = col; summarySortAsc = col === 'name'; }
+    renderSummary();
   }
 
   function filterByMember(name) {
