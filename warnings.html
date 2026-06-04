@@ -131,6 +131,7 @@
     .warn-count.w1 { background: var(--accent); }
     .warn-count.w2 { background: #e67e22; }
     .warn-count.w3 { background: var(--danger); }
+    .warn-count.w4 { background: #7b1fa2; }
     .summary-card .info { flex: 1; min-width: 0; }
     .summary-card .name { font-weight: 700; font-size: 0.95em; color: var(--text); }
     .summary-card .meta { font-size: 0.75em; color: var(--text-muted); margin-top: 2px; word-break: break-word; }
@@ -160,6 +161,7 @@
     .warn-num.w1 { background: var(--accent); }
     .warn-num.w2 { background: #e67e22; }
     .warn-num.w3 { background: var(--danger); }
+    .warn-num.w4 { background: #7b1fa2; }
     .warn-item .warn-name { font-weight: 700; font-size: 0.95em; }
     .warn-item .warn-type {
       display: inline-block; padding: 2px 8px; border-radius: 6px;
@@ -253,7 +255,9 @@
         <select id="warnNumber">
           <option value="1">1st Warning</option>
           <option value="2">2nd Warning</option>
-          <option value="3">3rd Warning (Final)</option>
+          <option value="3">3rd Warning</option>
+          <option value="4">4th Warning</option>
+          <option value="5">5th Warning (Final)</option>
         </select>
       </div>
     </div>
@@ -270,6 +274,9 @@
       </div>
     </div>
     <button class="btn danger" id="submitWarnBtn" onclick="submitWarning()" disabled>⚠️ Issue Warning</button>
+    <div style="margin-top:10px;">
+      <button class="btn" id="autoGenBtn" onclick="autoGenTargetWarnings()" disabled style="background:#e67e22;font-size:0.85em;width:auto;padding:10px 16px;">🎯 Auto-warn members with custom targets</button>
+    </div>
     <div id="formStatus" style="margin-top:8px;font-size:0.85em;"></div>
   </div>
 
@@ -411,6 +418,7 @@
       });
 
       document.getElementById('submitWarnBtn').disabled = false;
+      document.getElementById('autoGenBtn').disabled = false;
 
       // Process warnings
       if (warnings && warnings.success) {
@@ -437,7 +445,7 @@
     const s = warningSummary[member];
     const nextNum = s ? s.maxWarningNum + 1 : 1;
     const sel = document.getElementById('warnNumber');
-    sel.value = String(Math.min(nextNum, 3));
+    sel.value = String(Math.min(nextNum, 5));
   }
 
   // ===== SUBMIT WARNING =====
@@ -517,12 +525,16 @@
     }
     let html = '';
     entries.forEach(([name, data]) => {
-      const wClass = data.maxWarningNum >= 3 ? 'w3' : data.maxWarningNum >= 2 ? 'w2' : 'w1';
-      html += '<div class="summary-card" onclick="filterByMember(\'' + esc(name) + '\')" style="cursor:pointer">' +
+      const wClass = data.maxWarningNum >= 4 ? 'w4' : data.maxWarningNum >= 3 ? 'w3' : data.maxWarningNum >= 2 ? 'w2' : 'w1';
+      html += '<div class="summary-card">' +
         '<div class="warn-count ' + wClass + '">' + data.maxWarningNum + '</div>' +
         '<div class="info"><div class="name">' + esc(name) + '</div>' +
-        '<div class="meta">' + data.count + ' warning' + (data.count !== 1 ? 's' : '') + ' · ' + data.types.join(', ') + '</div>' +
-        '<div class="meta">Latest: ' + data.latestDate + '</div></div></div>';
+        '<div class="meta">' + data.count + ' warning' + (data.count !== 1 ? 's' : '') + ' \u00b7 ' + data.types.join(', ') + '</div>' +
+        '<div class="meta">Latest: ' + data.latestDate + '</div></div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">' +
+        '<button onclick="filterByMember(\'' + esc(name) + '\')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.75em" title="View">📜</button>' +
+        '<button onclick="clearMemberWarningsClick(\'' + esc(name) + '\')" style="background:none;border:1px solid var(--danger);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.75em;color:var(--danger)" title="Clear all warnings">🧹</button>' +
+        '</div></div>';
     });
     grid.innerHTML = html;
   }
@@ -550,7 +562,7 @@
 
     let html = '';
     filtered.forEach(w => {
-      const wClass = w.warningNumber >= 3 ? 'w3' : w.warningNumber >= 2 ? 'w2' : 'w1';
+      const wClass = w.warningNumber >= 4 ? 'w4' : w.warningNumber >= 3 ? 'w3' : w.warningNumber >= 2 ? 'w2' : 'w1';
       html += '<li class="warn-item">' +
         '<button class="delete-btn" onclick="deleteWarningClick(' + w.rowIndex + ')" title="Delete">🗑️</button>' +
         '<div class="warn-header">' +
@@ -563,6 +575,54 @@
         '</li>';
     });
     list.innerHTML = html;
+  }
+
+  // ===== CLEAR MEMBER WARNINGS =====
+  async function clearMemberWarningsClick(memberName) {
+    if (!confirm('Clear ALL warnings for "' + memberName + '"? This cannot be undone.')) return;
+    try {
+      const result = await callFunction('clearMemberWarnings', [memberName]);
+      if (result && result.success) {
+        showToast(result.message, 'success');
+        const warnings = await callFunction('getWarnings');
+        if (warnings && warnings.success) {
+          allWarnings = warnings.warnings || [];
+          warningSummary = warnings.summary || {};
+        }
+        renderSummary();
+        renderHistory();
+      } else { showToast('Error: ' + (result ? result.message : 'Unknown'), 'error'); }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
+  }
+
+  // ===== AUTO-GENERATE TARGET WARNINGS =====
+  async function autoGenTargetWarnings() {
+    const btn = document.getElementById('autoGenBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+    try {
+      const result = await callFunction('autoGenerateTargetWarnings', [currentUser ? currentUser.email : '']);
+      if (result && result.success) {
+        let msg = result.message;
+        if (result.added && result.added.length > 0) msg += ': ' + result.added.join(', ');
+        showToast(msg, 'success');
+        // Reload warnings
+        const warnings = await callFunction('getWarnings');
+        if (warnings && warnings.success) {
+          allWarnings = warnings.warnings || [];
+          warningSummary = warnings.summary || {};
+        }
+        renderSummary();
+        renderHistory();
+      } else {
+        showToast('Error: ' + (result ? result.message : 'Unknown'), 'error');
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '\uD83C\uDFAF Auto-warn members with custom targets';
+    }
   }
 
   // ===== HELPERS =====
