@@ -406,11 +406,21 @@
       }
 
       // Process troop data
+      // getAllTroopLevelsSummary returns a plain array with per-type fields like G_currentLevel, M_currentLevel, etc.
       troopData = {};
-      if (troopSummary && troopSummary.success && Array.isArray(troopSummary.data)) {
-        troopSummary.data.forEach(entry => {
+      const troopArr = Array.isArray(troopSummary) ? troopSummary : (troopSummary && Array.isArray(troopSummary.data) ? troopSummary.data : null);
+      if (troopArr) {
+        troopArr.forEach(entry => {
           const name = (entry.playerName || '').trim();
-          if (name) troopData[name.toLowerCase()] = entry.currentLevels || {};
+          if (name) {
+            troopData[name.toLowerCase()] = {
+              G: entry.G_currentLevel ?? null,
+              M: entry.M_currentLevel ?? null,
+              S: entry.S_currentLevel ?? null,
+              E: entry.E_currentLevel ?? null,
+              C: entry.C_currentLevel ?? null
+            };
+          }
         });
       }
 
