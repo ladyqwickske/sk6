@@ -277,6 +277,7 @@
     <button class="view-tab-btn active" onclick="switchView('transactions', this)">📋 Transactions</button>
     <button class="view-tab-btn" onclick="switchView('playerSummary', this)">👥 By Player</button>
     <button class="view-tab-btn" onclick="switchView('resourceSummary', this)">📦 By Resource</button>
+    <button class="view-tab-btn" onclick="switchView('dailyDonors', this)">🌿 Daily Donors</button>
   </div>
 
   <!-- Transactions View -->
@@ -334,6 +335,41 @@
       </table>
     </div>
   </div>
+
+  <!-- Daily Donors View -->
+  <div id="dailyDonorsView" style="display:none" class="player-summary-section">
+    <div style="margin-bottom:12px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;font-size:0.85em;color:#6d4c00;">
+      🌿 Shows players who donated <strong>less than 4,000 Forest Essence</strong> on any day with recorded activity. Players with no Forest Essence donations at all on a given day are highlighted in red.
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+      <div class="filter-group" style="min-width:140px;">
+        <label>Date</label>
+        <select id="ddDateFilter" onchange="renderDailyDonors()">
+          <option value="">All Dates</option>
+        </select>
+      </div>
+      <div class="filter-group" style="min-width:140px;">
+        <label>Show</label>
+        <select id="ddShowFilter" onchange="renderDailyDonors()">
+          <option value="below">Below target only</option>
+          <option value="all">All players</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="player-summary-table">
+        <thead>
+          <tr>
+            <th onclick="sortSummary('daily','member')">Member</th>
+            <th onclick="sortSummary('daily','date')">Date</th>
+            <th onclick="sortSummary('daily','donated')">Forest Essence Donated</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="dailyDonorsBody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -348,8 +384,9 @@
   let isLoggedIn = false;
   let currentUser = null;
   let currentView = 'transactions';
-  let summarySortField = { player: 'net', resource: 'contributed' };
-  let summarySortAsc = { player: false, resource: false };
+  let summarySortField = { player: 'net', resource: 'contributed', daily: 'donated' };
+  let summarySortAsc = { player: false, resource: false, daily: true };
+  let membersList = [];
 
   document.addEventListener('DOMContentLoaded', () => {
     checkLoginState();
@@ -438,10 +475,15 @@
   // ===========================
   async function loadResourceData() {
     try {
-      const result = await callFunction('getResourceContributions');
+      const [result, members] = await Promise.all([
+        callFunction('getResourceContributions'),
+        callFunction('getMembersList').catch(() => [])
+      ]);
       if (result && result.success) {
         allData = result.data || [];
+        membersList = Array.isArray(members) ? members.map(m => m.name || m) : [];
         populateFilters(result.resources || [], result.members || []);
+        populateDailyDonorsDates();
         applyFilters();
         document.getElementById('loadingDiv').style.display = 'none';
         document.getElementById('tableContainer').style.display = 'block';
@@ -452,6 +494,13 @@
       console.error(err);
       document.getElementById('loadingDiv').innerHTML = '<span style="color:var(--danger)">Failed to load resource data: ' + escapeHtml(err.message) + '</span>';
     }
+  }
+
+  function populateDailyDonorsDates() {
+    const dates = [...new Set(allData.filter(r => r.resource === 'Forest Essence' && r.amount > 0).map(r => r.date))].sort().reverse();
+    const sel = document.getElementById('ddDateFilter');
+    sel.innerHTML = '<option value="">All Dates</option>';
+    dates.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
   }
 
   function populateFilters(resources, members) {
@@ -574,6 +623,7 @@
     document.getElementById('transactionsView').style.display = view === 'transactions' ? 'block' : 'none';
     document.getElementById('playerSummaryView').style.display = view === 'playerSummary' ? 'block' : 'none';
     document.getElementById('resourceSummaryView').style.display = view === 'resourceSummary' ? 'block' : 'none';
+    document.getElementById('dailyDonorsView').style.display = view === 'dailyDonors' ? 'block' : 'none';
     renderCurrentView();
   }
 
@@ -582,6 +632,7 @@
       case 'transactions': renderTransactionsTable(); break;
       case 'playerSummary': renderPlayerSummary(); break;
       case 'resourceSummary': renderResourceSummary(); break;
+      case 'dailyDonors': renderDailyDonors(); break;
     }
   }
 
@@ -713,6 +764,91 @@
         <td style="text-align:center">${e.members}</td>
       </tr>
     `).join('');
+  }
+
+  // ===========================
+  // DAILY DONORS VIEW
+  // ===========================
+  function renderDailyDonors() {
+    const TARGET = 4000;
+    const dateFilter = document.getElementById('ddDateFilter').value;
+    const showFilter = document.getElementById('ddShowFilter').value;
+
+    // Get all Forest Essence sent (positive) entries from the full dataset (ignores main filters)
+    const feRows = allData.filter(r => r.resource === 'Forest Essence' && r.amount > 0);
+
+    // Get all dates that have any Forest Essence activity
+    let dates = [...new Set(feRows.map(r => r.date))].sort();
+    if (dateFilter) dates = dates.filter(d => d === dateFilter);
+
+    // Sum per player per date
+    const playerDateMap = {}; // { member: { date: totalDonated } }
+    feRows.forEach(r => {
+      if (dateFilter && r.date !== dateFilter) return;
+      if (!playerDateMap[r.member]) playerDateMap[r.member] = {};
+      playerDateMap[r.member][r.date] = (playerDateMap[r.member][r.date] || 0) + r.amount;
+    });
+
+    // Build rows: for each date, list every member and their donated amount
+    // Include members from the roster who didn't donate at all
+    const allMembers = membersList.length > 0
+      ? [...new Set([...membersList, ...Object.keys(playerDateMap)])].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+      : [...new Set(Object.keys(playerDateMap))].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+    let rows = [];
+    dates.forEach(date => {
+      allMembers.forEach(member => {
+        const donated = (playerDateMap[member] && playerDateMap[member][date]) || 0;
+        rows.push({ member, date, donated });
+      });
+    });
+
+    // Apply show filter
+    if (showFilter === 'below') {
+      rows = rows.filter(r => r.donated < TARGET);
+    }
+
+    // Sort
+    const field = summarySortField.daily;
+    const asc = summarySortAsc.daily;
+    rows.sort((a, b) => {
+      let va, vb;
+      switch (field) {
+        case 'member': va = a.member.toLowerCase(); vb = b.member.toLowerCase(); break;
+        case 'date': va = a.date; vb = b.date; break;
+        case 'donated': va = a.donated; vb = b.donated; break;
+        default: va = a.donated; vb = b.donated;
+      }
+      if (typeof va === 'string') return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+      return asc ? va - vb : vb - va;
+    });
+
+    const tbody = document.getElementById('dailyDonorsBody');
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted);">All players met the 4,000 Forest Essence target! 🎉</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const pct = Math.round((r.donated / TARGET) * 100);
+      let statusHtml, rowStyle;
+      if (r.donated === 0) {
+        statusHtml = '<span style="color:var(--danger);font-weight:700;">❌ No donation</span>';
+        rowStyle = 'background:rgba(192,57,43,0.06);';
+      } else if (r.donated < TARGET) {
+        statusHtml = `<span style="color:#e65100;font-weight:600;">⚠️ ${pct}% of target</span>`;
+        rowStyle = 'background:rgba(230,81,0,0.04);';
+      } else {
+        statusHtml = '<span style="color:var(--success);font-weight:600;">✅ Met target</span>';
+        rowStyle = '';
+      }
+      return `<tr style="${rowStyle}">
+        <td><strong>${escapeHtml(r.member)}</strong></td>
+        <td>${escapeHtml(r.date)}</td>
+        <td class="${r.donated >= TARGET ? 'amount-positive' : r.donated > 0 ? 'amount-negative' : ''}" style="${r.donated === 0 ? 'color:var(--danger);font-weight:600;' : ''}">${formatNumber(r.donated)}</td>
+        <td>${statusHtml}</td>
+      </tr>`;
+    }).join('');
   }
 
   // ===========================
