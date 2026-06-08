@@ -384,8 +384,8 @@
   let isLoggedIn = false;
   let currentUser = null;
   let currentView = 'transactions';
-  let summarySortField = { player: 'net', resource: 'contributed', daily: 'donated' };
-  let summarySortAsc = { player: false, resource: false, daily: true };
+  let summarySortField = { player: 'net', resource: 'contributed', daily: 'date' };
+  let summarySortAsc = { player: false, resource: false, daily: false };
   let membersList = [];
 
   document.addEventListener('DOMContentLoaded', () => {
