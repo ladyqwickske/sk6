@@ -364,6 +364,16 @@
       <div id="worstPerformersContent" style="font-size:0.88em;">Loading...</div>
     </div>
 
+    <!-- Unmatched Resource Names -->
+    <div id="unmatchedNamesCard" style="display:none;margin-bottom:16px;background:#fff;border:1px solid #ffcdd2;border-radius:10px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="document.getElementById('unmatchedNamesBody').style.display=document.getElementById('unmatchedNamesBody').style.display==='none'?'block':'none';">
+        <h3 style="margin:0;color:var(--danger);font-size:1em;">⚠️ Unmatched Resource Names</h3>
+        <span style="font-size:0.8em;color:var(--text-muted);">click to expand ▾</span>
+      </div>
+      <p style="font-size:0.78em;color:var(--text-muted);margin-top:4px;">These names appear in the Resource Contributions sheet but don't match any current member. They are excluded from Daily Donors tracking.</p>
+      <div id="unmatchedNamesBody" style="display:none;margin-top:10px;"></div>
+    </div>
+
     <div class="table-container">
       <table class="player-summary-table">
         <thead>
@@ -797,18 +807,25 @@
       playerDateMap[r.member][r.date] = (playerDateMap[r.member][r.date] || 0) + r.amount;
     });
 
-    // Build rows: for each date, list every member and their donated amount
-    // Include members from the roster who didn't donate at all
-    const allMembers = membersList.length > 0
-      ? [...new Set([...membersList, ...Object.keys(playerDateMap)])].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+    // Build members list — only current roster members
+    const membersLower = new Set(membersList.map(m => m.toLowerCase()));
+    const currentMembers = membersList.length > 0
+      ? [...membersList].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       : [...new Set(Object.keys(playerDateMap))].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
+    // Find unmatched names (in resource data but not in current member roster)
+    const resourceNames = [...new Set(allData.map(r => r.member))];
+    const unmatchedNames = membersList.length > 0
+      ? resourceNames.filter(n => !membersLower.has(n.toLowerCase())).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+      : [];
+    renderUnmatchedNames(unmatchedNames);
+
     // ── Worst Performers Card ──
-    renderWorstPerformers(allMembers, playerDateMap, dates, TARGET);
+    renderWorstPerformers(currentMembers, playerDateMap, dates, TARGET);
 
     let rows = [];
     dates.forEach(date => {
-      allMembers.forEach(member => {
+      currentMembers.forEach(member => {
         const donated = (playerDateMap[member] && playerDateMap[member][date]) || 0;
         rows.push({ member, date, donated });
       });
@@ -860,6 +877,45 @@
         <td>${statusHtml}</td>
       </tr>`;
     }).join('');
+  }
+
+  // ===========================
+  // UNMATCHED NAMES
+  // ===========================
+  function renderUnmatchedNames(unmatched) {
+    const card = document.getElementById('unmatchedNamesCard');
+    const body = document.getElementById('unmatchedNamesBody');
+    if (!card || !body) return;
+    if (unmatched.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    card.querySelector('h3').textContent = `⚠️ Unmatched Resource Names (${unmatched.length})`;
+
+    // For each unmatched name, show total contributions across all resources
+    const stats = unmatched.map(name => {
+      const rows = allData.filter(r => r.member === name);
+      let sent = 0, received = 0;
+      rows.forEach(r => { if (r.amount > 0) sent += r.amount; else received += Math.abs(r.amount); });
+      const resources = [...new Set(rows.map(r => r.resource))].join(', ');
+      return { name, sent, received, count: rows.length, resources };
+    });
+    stats.sort((a, b) => b.count - a.count);
+
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.85em;">';
+    html += '<tr style="border-bottom:2px solid var(--border);"><th style="text-align:left;padding:5px 8px;">Name in Resources</th><th style="text-align:left;padding:5px 8px;">Resources</th><th style="text-align:right;padding:5px 8px;">Sent</th><th style="text-align:right;padding:5px 8px;">Received</th><th style="text-align:center;padding:5px 8px;">Records</th></tr>';
+    stats.forEach(s => {
+      html += `<tr style="border-bottom:1px solid #eee;">
+        <td style="padding:4px 8px;font-weight:600;color:var(--danger);">${escapeHtml(s.name)}</td>
+        <td style="padding:4px 8px;color:var(--text-muted);font-size:0.9em;">${escapeHtml(s.resources)}</td>
+        <td style="padding:4px 8px;text-align:right;" class="amount-positive">+${formatNumber(s.sent)}</td>
+        <td style="padding:4px 8px;text-align:right;" class="amount-negative">-${formatNumber(s.received)}</td>
+        <td style="padding:4px 8px;text-align:center;">${s.count}</td>
+      </tr>`;
+    });
+    html += '</table>';
+    body.innerHTML = html;
   }
 
   // ===========================
