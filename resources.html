@@ -405,6 +405,7 @@
   let summarySortField = { player: 'net', resource: 'contributed', daily: 'date' };
   let summarySortAsc = { player: false, resource: false, daily: false };
   let membersList = [];
+  let membersJoinDates = {}; // { lowerName: 'YYYY-MM-DD' }
   let formerMembersList = [];
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -501,6 +502,14 @@
       if (result && result.success) {
         allData = result.data || [];
         membersList = Array.isArray(members) ? members.map(m => m.name || m) : [];
+        membersJoinDates = {};
+        if (Array.isArray(members)) {
+          members.forEach(m => {
+            const name = (m.name || m || '').toString().trim();
+            const jd = (m.joinDate || '').toString().trim();
+            if (name && jd) membersJoinDates[name.toLowerCase()] = jd;
+          });
+        }
         formerMembersList = Array.isArray(result.formerMembers) ? result.formerMembers : [];
         populateFilters(result.resources || [], result.members || []);
         populateDailyDonorsDates();
@@ -874,7 +883,7 @@
         rowStyle = '';
       }
       return `<tr style="${rowStyle}">
-        <td><strong>${escapeHtml(r.member)}</strong></td>
+        <td><strong>${escapeHtml(r.member)}</strong>${newMemberBadge(r.member)}</td>
         <td>${escapeHtml(r.date)}</td>
         <td class="${r.donated >= TARGET ? 'amount-positive' : r.donated > 0 ? 'amount-negative' : ''}" style="${r.donated === 0 ? 'color:var(--danger);font-weight:600;' : ''}">${formatNumber(r.donated)}</td>
         <td>${statusHtml}</td>
@@ -975,7 +984,7 @@
       const rowBg = s.totalDonated === 0 ? 'rgba(192,57,43,0.06)' : i % 2 === 0 ? '#fafafa' : '#fff';
       html += `<tr style="background:${rowBg};border-bottom:1px solid #eee;">
         <td style="padding:5px 8px;font-weight:700;color:var(--text-muted);">${i + 1}</td>
-        <td style="padding:5px 8px;font-weight:600;">${escapeHtml(s.member)}${s.totalDonated === 0 ? ' <span style="color:var(--danger);font-size:0.75em;">⛔ ZERO</span>' : ''}</td>
+        <td style="padding:5px 8px;font-weight:600;">${escapeHtml(s.member)}${newMemberBadge(s.member)}${s.totalDonated === 0 ? ' <span style="color:var(--danger);font-size:0.75em;">⛔ ZERO</span>' : ''}</td>
         <td style="padding:5px 8px;text-align:right;font-weight:600;color:${s.totalDonated === 0 ? 'var(--danger)' : 'var(--text)'};">${formatNumber(s.totalDonated)}</td>
         <td style="padding:5px 8px;text-align:right;font-weight:700;color:${avgColor};">${formatNumber(s.avgPerDay)}</td>
         <td style="padding:5px 8px;text-align:center;color:${s.daysMissed > 0 ? 'var(--danger)' : 'var(--success)'};">${s.daysMissed} / ${s.totalDays} (${missedPct}%)</td>
@@ -991,6 +1000,19 @@
   // ===========================
   // UTILITIES
   // ===========================
+  function newMemberBadge(memberName) {
+    const jd = membersJoinDates[(memberName || '').toLowerCase()];
+    if (!jd) return '';
+    const joinDate = new Date(jd + 'T00:00:00Z');
+    if (isNaN(joinDate.getTime())) return '';
+    const now = new Date();
+    const diffDays = Math.floor((now - joinDate) / 86400000);
+    if (diffDays <= 7) {
+      return ` <span style="font-size:0.7em;background:#e3f2fd;color:#1565c0;padding:1px 6px;border-radius:4px;font-weight:600;" title="Joined ${jd}">🆕 ${jd}</span>`;
+    }
+    return '';
+  }
+
   function resourceBadge(name) {
     const cls = name.toLowerCase().replace(/\s+/g, '-');
     return `<span class="resource-badge ${cls}">${escapeHtml(name)}</span>`;
