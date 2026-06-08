@@ -356,6 +356,14 @@
         </select>
       </div>
     </div>
+
+    <!-- Worst Performers Card -->
+    <div id="worstPerformersCard" style="margin-bottom:16px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 16px;">
+      <h3 style="margin:0 0 10px;color:var(--danger);font-size:1em;">🏚️ Bottom 10 — Lowest Forest Essence Contributors</h3>
+      <p style="font-size:0.78em;color:var(--text-muted);margin-bottom:10px;">Average daily donation across all recorded days. Members with zero donations are listed first.</p>
+      <div id="worstPerformersContent" style="font-size:0.88em;">Loading...</div>
+    </div>
+
     <div class="table-container">
       <table class="player-summary-table">
         <thead>
@@ -795,6 +803,9 @@
       ? [...new Set([...membersList, ...Object.keys(playerDateMap)])].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       : [...new Set(Object.keys(playerDateMap))].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
+    // ── Worst Performers Card ──
+    renderWorstPerformers(allMembers, playerDateMap, dates, TARGET);
+
     let rows = [];
     dates.forEach(date => {
       allMembers.forEach(member => {
@@ -849,6 +860,73 @@
         <td>${statusHtml}</td>
       </tr>`;
     }).join('');
+  }
+
+  // ===========================
+  // WORST PERFORMERS CARD
+  // ===========================
+  function renderWorstPerformers(allMembers, playerDateMap, allDates, target) {
+    const container = document.getElementById('worstPerformersContent');
+    if (!container || allDates.length === 0) {
+      if (container) container.innerHTML = '<span style="color:var(--text-muted);">No Forest Essence data available.</span>';
+      return;
+    }
+
+    const totalDays = allDates.length;
+
+    // For each member: total donated, days donated, days missed, avg per day
+    const stats = allMembers.map(member => {
+      let totalDonated = 0;
+      let daysDonated = 0;
+      let daysMissed = 0;
+      allDates.forEach(date => {
+        const amt = (playerDateMap[member] && playerDateMap[member][date]) || 0;
+        totalDonated += amt;
+        if (amt >= target) daysDonated++;
+        else daysMissed++;
+      });
+      return {
+        member,
+        totalDonated,
+        avgPerDay: Math.round(totalDonated / totalDays),
+        daysMissed,
+        daysDonated,
+        totalDays
+      };
+    });
+
+    // Sort: lowest avg first, then by most days missed
+    stats.sort((a, b) => a.avgPerDay - b.avgPerDay || b.daysMissed - a.daysMissed);
+
+    const bottom10 = stats.slice(0, 10);
+
+    let html = '<table style="width:100%;border-collapse:collapse;">';
+    html += '<tr style="border-bottom:2px solid var(--accent);">';
+    html += '<th style="text-align:left;padding:6px 8px;font-size:0.8em;color:var(--primary);">#</th>';
+    html += '<th style="text-align:left;padding:6px 8px;font-size:0.8em;color:var(--primary);">Member</th>';
+    html += '<th style="text-align:right;padding:6px 8px;font-size:0.8em;color:var(--primary);">Total Donated</th>';
+    html += '<th style="text-align:right;padding:6px 8px;font-size:0.8em;color:var(--primary);">Avg / Day</th>';
+    html += '<th style="text-align:center;padding:6px 8px;font-size:0.8em;color:var(--primary);">Days Below Target</th>';
+    html += '<th style="text-align:center;padding:6px 8px;font-size:0.8em;color:var(--primary);">Days Met</th>';
+    html += '</tr>';
+
+    bottom10.forEach((s, i) => {
+      const avgColor = s.avgPerDay === 0 ? 'var(--danger)' : s.avgPerDay < target ? '#e65100' : 'var(--success)';
+      const missedPct = Math.round((s.daysMissed / s.totalDays) * 100);
+      const rowBg = s.totalDonated === 0 ? 'rgba(192,57,43,0.06)' : i % 2 === 0 ? '#fafafa' : '#fff';
+      html += `<tr style="background:${rowBg};border-bottom:1px solid #eee;">
+        <td style="padding:5px 8px;font-weight:700;color:var(--text-muted);">${i + 1}</td>
+        <td style="padding:5px 8px;font-weight:600;">${escapeHtml(s.member)}${s.totalDonated === 0 ? ' <span style="color:var(--danger);font-size:0.75em;">⛔ ZERO</span>' : ''}</td>
+        <td style="padding:5px 8px;text-align:right;font-weight:600;color:${s.totalDonated === 0 ? 'var(--danger)' : 'var(--text)'};">${formatNumber(s.totalDonated)}</td>
+        <td style="padding:5px 8px;text-align:right;font-weight:700;color:${avgColor};">${formatNumber(s.avgPerDay)}</td>
+        <td style="padding:5px 8px;text-align:center;color:${s.daysMissed > 0 ? 'var(--danger)' : 'var(--success)'};">${s.daysMissed} / ${s.totalDays} (${missedPct}%)</td>
+        <td style="padding:5px 8px;text-align:center;color:var(--success);">${s.daysDonated}</td>
+      </tr>`;
+    });
+
+    html += '</table>';
+    html += `<p style="font-size:0.75em;color:var(--text-muted);margin-top:8px;">Based on ${totalDays} day(s) of Forest Essence activity: ${allDates[0]} → ${allDates[allDates.length - 1]}</p>`;
+    container.innerHTML = html;
   }
 
   // ===========================
