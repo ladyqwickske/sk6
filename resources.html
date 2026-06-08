@@ -405,6 +405,7 @@
   let summarySortField = { player: 'net', resource: 'contributed', daily: 'date' };
   let summarySortAsc = { player: false, resource: false, daily: false };
   let membersList = [];
+  let formerMembersList = [];
 
   document.addEventListener('DOMContentLoaded', () => {
     checkLoginState();
@@ -500,6 +501,7 @@
       if (result && result.success) {
         allData = result.data || [];
         membersList = Array.isArray(members) ? members.map(m => m.name || m) : [];
+        formerMembersList = Array.isArray(result.formerMembers) ? result.formerMembers : [];
         populateFilters(result.resources || [], result.members || []);
         populateDailyDonorsDates();
         applyFilters();
@@ -813,10 +815,11 @@
       ? [...membersList].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       : [...new Set(Object.keys(playerDateMap))].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
-    // Find unmatched names (in resource data but not in current member roster)
+    // Find unmatched names (in resource data but not in current or former member roster)
     const resourceNames = [...new Set(allData.map(r => r.member))];
+    const formerLower = new Set(formerMembersList.map(m => m.toLowerCase()));
     const unmatchedNames = membersList.length > 0
-      ? resourceNames.filter(n => !membersLower.has(n.toLowerCase())).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+      ? resourceNames.filter(n => !membersLower.has(n.toLowerCase()) && !formerLower.has(n.toLowerCase())).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
       : [];
     renderUnmatchedNames(unmatchedNames);
 
