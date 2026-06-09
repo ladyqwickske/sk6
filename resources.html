@@ -400,15 +400,15 @@
   <!-- Dragon Coins Payouts View -->
   <div id="dragonPayoutsView" style="display:none" class="player-summary-section">
     <div style="margin-bottom:12px;padding:10px 14px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:8px;font-size:0.85em;color:#e65100;">
-      🐉 Dragon Coins are distributed the day after they are contributed. This view shows each player's <strong>all-time balance</strong> (total contributed − total received back). Positive balance = still owed coins.
+      🐉 Dragon Coins are distributed the day after they are contributed. This view shows each player's <strong>last 7 days</strong> balance (contributed − received back). Positive balance = still owed coins.
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
       <div class="summary-card" style="flex:1;min-width:160px;">
-        <div class="card-label">All-Time Contributed</div>
+        <div class="card-label">Contributed (7d)</div>
         <div class="card-value positive" id="dcContributed">—</div>
       </div>
       <div class="summary-card" style="flex:1;min-width:160px;">
-        <div class="card-label">All-Time Paid Out</div>
+        <div class="card-label">Paid Out (7d)</div>
         <div class="card-value negative" id="dcPaidOut">—</div>
       </div>
       <div class="summary-card" style="flex:1;min-width:160px;">
@@ -1129,45 +1129,30 @@
     // Only current members
     const membersLower = new Set(membersList.map(m => m.toLowerCase()));
 
-    // All Dragon Coins entries for current members
-    const dcRows = allData.filter(r =>
-      r.resource === 'Dragon Coins' && membersLower.has(r.member.toLowerCase())
-    );
-
-    // Yesterday's date (latest day we have full data for)
+    // Date window: last 7 days up to yesterday (today not recorded yet)
     const now = new Date();
     const yesterdayDate = new Date(now);
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const yesterday = yesterdayDate.toISOString().split('T')[0];
 
-    // Contributions = positive amounts up to and including day-before-yesterday
-    //   (yesterday's contributions would be paid out today, which we don't have yet)
-    // Payouts = negative amounts up to and including yesterday
-    //
-    // In other words: only count contributions that are "due" for payout
-    //   (contributed on day X → payout on day X+1, so due if X+1 <= yesterday, i.e. X <= day-before-yesterday)
-    const dayBeforeYesterday = new Date(now);
-    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
-    const dby = dayBeforeYesterday.toISOString().split('T')[0];
+    const windowStart = new Date(now);
+    windowStart.setDate(windowStart.getDate() - 7);
+    const windowStartStr = windowStart.toISOString().split('T')[0];
+
+    // Dragon Coins entries for current members within the last 7 days
+    const dcRows = allData.filter(r =>
+      r.resource === 'Dragon Coins' && membersLower.has(r.member.toLowerCase())
+      && r.date >= windowStartStr && r.date <= yesterday
+    );
 
     const playerMap = {}; // { member: { contributed, paidOut } }
 
     dcRows.forEach(r => {
       if (!playerMap[r.member]) playerMap[r.member] = { contributed: 0, paidOut: 0 };
-      if (r.amount > 0 && r.date <= dby) {
-        // Contribution from day-before-yesterday or earlier → payout should have happened by yesterday
+      if (r.amount > 0) {
         playerMap[r.member].contributed += r.amount;
-      } else if (r.amount < 0 && r.date <= yesterday) {
-        // Payout up to and including yesterday
+      } else if (r.amount < 0) {
         playerMap[r.member].paidOut += Math.abs(r.amount);
-      }
-    });
-
-    // Also add yesterday's contributions as "pending" (due for payout today, but today not recorded yet)
-    dcRows.forEach(r => {
-      if (r.amount > 0 && r.date === yesterday) {
-        if (!playerMap[r.member]) playerMap[r.member] = { contributed: 0, paidOut: 0 };
-        playerMap[r.member].contributed += r.amount;
       }
     });
 
@@ -1215,8 +1200,8 @@
     const tbody = document.getElementById('dragonPayoutsBody');
     if (entries.length === 0) {
       const msg = showFilter === 'owed'
-        ? 'No outstanding Dragon Coins! All balances are settled. 🎉'
-        : 'No Dragon Coins activity found for current members.';
+        ? 'No outstanding Dragon Coins in the last 7 days! All balances are settled. 🎉'
+        : 'No Dragon Coins activity found for current members in the last 7 days.';
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">${msg}</td></tr>`;
       return;
     }
