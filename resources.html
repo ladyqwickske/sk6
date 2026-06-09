@@ -278,6 +278,7 @@
     <button class="view-tab-btn" onclick="switchView('playerSummary', this)">👥 By Player</button>
     <button class="view-tab-btn" onclick="switchView('resourceSummary', this)">📦 By Resource</button>
     <button class="view-tab-btn" onclick="switchView('dailyDonors', this)">🌿 Daily Donors</button>
+    <button class="view-tab-btn" onclick="switchView('dragonPayouts', this)">🐉 Dragon Coins</button>
   </div>
 
   <!-- Transactions View -->
@@ -395,6 +396,54 @@
       </table>
     </div>
   </div>
+
+  <!-- Dragon Coins Payouts View -->
+  <div id="dragonPayoutsView" style="display:none" class="player-summary-section">
+    <div style="margin-bottom:12px;padding:10px 14px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:8px;font-size:0.85em;color:#e65100;">
+      🐉 Dragon Coins are distributed the day after they are contributed. This view shows each player's <strong>all-time balance</strong> (total contributed − total received back). Positive balance = still owed coins.
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+      <div class="summary-card" style="flex:1;min-width:160px;">
+        <div class="card-label">All-Time Contributed</div>
+        <div class="card-value positive" id="dcContributed">—</div>
+      </div>
+      <div class="summary-card" style="flex:1;min-width:160px;">
+        <div class="card-label">All-Time Paid Out</div>
+        <div class="card-value negative" id="dcPaidOut">—</div>
+      </div>
+      <div class="summary-card" style="flex:1;min-width:160px;">
+        <div class="card-label">Total Still Owed</div>
+        <div class="card-value" id="dcOwed">—</div>
+      </div>
+      <div class="summary-card" style="flex:1;min-width:160px;">
+        <div class="card-label">Players Pending</div>
+        <div class="card-value" id="dcPending">—</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+      <div class="filter-group" style="min-width:140px;">
+        <label>Show</label>
+        <select id="dcShowFilter" onchange="renderDragonPayouts()">
+          <option value="owed">Owed only (balance > 0)</option>
+          <option value="all">All players</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-container">
+      <table class="player-summary-table">
+        <thead>
+          <tr>
+            <th onclick="sortSummary('dragon','member')">Member</th>
+            <th onclick="sortSummary('dragon','contributed')">Total Contributed</th>
+            <th onclick="sortSummary('dragon','paidOut')">Total Paid Out</th>
+            <th onclick="sortSummary('dragon','balance')">Balance (Owed)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="dragonPayoutsBody"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -409,8 +458,8 @@
   let isLoggedIn = false;
   let currentUser = null;
   let currentView = 'transactions';
-  let summarySortField = { player: 'net', resource: 'contributed', daily: 'date' };
-  let summarySortAsc = { player: false, resource: false, daily: false };
+  let summarySortField = { player: 'net', resource: 'contributed', daily: 'date', dragon: 'balance' };
+  let summarySortAsc = { player: false, resource: false, daily: false, dragon: false };
   let membersList = [];
   let membersJoinDates = {}; // { lowerName: 'YYYY-MM-DD' }
   let formerMembersList = [];
@@ -660,6 +709,7 @@
     document.getElementById('playerSummaryView').style.display = view === 'playerSummary' ? 'block' : 'none';
     document.getElementById('resourceSummaryView').style.display = view === 'resourceSummary' ? 'block' : 'none';
     document.getElementById('dailyDonorsView').style.display = view === 'dailyDonors' ? 'block' : 'none';
+    document.getElementById('dragonPayoutsView').style.display = view === 'dragonPayouts' ? 'block' : 'none';
     renderCurrentView();
   }
 
@@ -669,6 +719,7 @@
       case 'playerSummary': renderPlayerSummary(); break;
       case 'resourceSummary': renderResourceSummary(); break;
       case 'dailyDonors': renderDailyDonors(); break;
+      case 'dragonPayouts': renderDragonPayouts(); break;
     }
   }
 
@@ -1067,6 +1118,133 @@
     html += '</table>';
     html += `<p style="font-size:0.75em;color:var(--text-muted);margin-top:8px;">Based on ${totalDays} day(s) of Forest Essence activity: ${allDates[0]} → ${allDates[allDates.length - 1]}</p>`;
     container.innerHTML = html;
+  }
+
+  // ===========================
+  // DRAGON COINS PAYOUTS
+  // ===========================
+  function renderDragonPayouts() {
+    const showFilter = document.getElementById('dcShowFilter').value;
+
+    // Only current members
+    const membersLower = new Set(membersList.map(m => m.toLowerCase()));
+
+    // All Dragon Coins entries for current members
+    const dcRows = allData.filter(r =>
+      r.resource === 'Dragon Coins' && membersLower.has(r.member.toLowerCase())
+    );
+
+    // Yesterday's date (latest day we have full data for)
+    const now = new Date();
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+    // Contributions = positive amounts up to and including day-before-yesterday
+    //   (yesterday's contributions would be paid out today, which we don't have yet)
+    // Payouts = negative amounts up to and including yesterday
+    //
+    // In other words: only count contributions that are "due" for payout
+    //   (contributed on day X → payout on day X+1, so due if X+1 <= yesterday, i.e. X <= day-before-yesterday)
+    const dayBeforeYesterday = new Date(now);
+    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
+    const dby = dayBeforeYesterday.toISOString().split('T')[0];
+
+    const playerMap = {}; // { member: { contributed, paidOut } }
+
+    dcRows.forEach(r => {
+      if (!playerMap[r.member]) playerMap[r.member] = { contributed: 0, paidOut: 0 };
+      if (r.amount > 0 && r.date <= dby) {
+        // Contribution from day-before-yesterday or earlier → payout should have happened by yesterday
+        playerMap[r.member].contributed += r.amount;
+      } else if (r.amount < 0 && r.date <= yesterday) {
+        // Payout up to and including yesterday
+        playerMap[r.member].paidOut += Math.abs(r.amount);
+      }
+    });
+
+    // Also add yesterday's contributions as "pending" (due for payout today, but today not recorded yet)
+    dcRows.forEach(r => {
+      if (r.amount > 0 && r.date === yesterday) {
+        if (!playerMap[r.member]) playerMap[r.member] = { contributed: 0, paidOut: 0 };
+        playerMap[r.member].contributed += r.amount;
+      }
+    });
+
+    let entries = Object.entries(playerMap).map(([member, data]) => ({
+      member,
+      contributed: data.contributed,
+      paidOut: data.paidOut,
+      balance: data.contributed - data.paidOut
+    }));
+
+    // Summary totals
+    let totalContributed = 0, totalPaidOut = 0;
+    entries.forEach(e => { totalContributed += e.contributed; totalPaidOut += e.paidOut; });
+    const totalOwed = totalContributed - totalPaidOut;
+    const pendingCount = entries.filter(e => e.balance > 0).length;
+
+    document.getElementById('dcContributed').textContent = formatNumber(totalContributed);
+    document.getElementById('dcPaidOut').textContent = formatNumber(totalPaidOut);
+    const owedEl = document.getElementById('dcOwed');
+    owedEl.textContent = formatNumber(Math.max(0, totalOwed));
+    owedEl.className = 'card-value ' + (totalOwed > 0 ? 'negative' : 'positive');
+    document.getElementById('dcPending').textContent = pendingCount;
+
+    // Filter
+    if (showFilter === 'owed') {
+      entries = entries.filter(e => e.balance > 0);
+    }
+
+    // Sort
+    const field = summarySortField.dragon;
+    const asc = summarySortAsc.dragon;
+    entries.sort((a, b) => {
+      let va, vb;
+      switch (field) {
+        case 'member': va = a.member.toLowerCase(); vb = b.member.toLowerCase(); break;
+        case 'contributed': va = a.contributed; vb = b.contributed; break;
+        case 'paidOut': va = a.paidOut; vb = b.paidOut; break;
+        case 'balance': va = a.balance; vb = b.balance; break;
+        default: va = a.balance; vb = b.balance;
+      }
+      if (typeof va === 'string') return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+      return asc ? va - vb : vb - va;
+    });
+
+    const tbody = document.getElementById('dragonPayoutsBody');
+    if (entries.length === 0) {
+      const msg = showFilter === 'owed'
+        ? 'No outstanding Dragon Coins! All balances are settled. 🎉'
+        : 'No Dragon Coins activity found for current members.';
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">${msg}</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = entries.map(e => {
+      let statusHtml, rowStyle;
+      if (e.balance <= 0 && e.contributed > 0) {
+        statusHtml = '<span style="color:var(--success);font-weight:600;">✅ Settled</span>';
+        rowStyle = '';
+      } else if (e.balance > 0 && e.paidOut > 0) {
+        const pct = Math.round((e.paidOut / e.contributed) * 100);
+        statusHtml = `<span style="color:#e65100;font-weight:600;">⏳ Partial (${pct}%)</span>`;
+        rowStyle = 'background:rgba(230,81,0,0.04);';
+      } else if (e.balance > 0) {
+        statusHtml = '<span style="color:var(--danger);font-weight:700;">❌ Not paid</span>';
+        rowStyle = 'background:rgba(192,57,43,0.06);';
+      } else {
+        statusHtml = '<span style="color:var(--text-muted);">—</span>';
+        rowStyle = '';
+      }
+      return `<tr style="${rowStyle}">
+        <td><strong>${escapeHtml(e.member)}</strong>${newMemberBadge(e.member)}</td>
+        <td class="amount-positive">+${formatNumber(e.contributed)}</td>
+        <td class="${e.paidOut > 0 ? 'amount-negative' : ''}">${e.paidOut > 0 ? '-' : ''}${formatNumber(e.paidOut)}</td>
+        <td style="font-weight:700;color:${e.balance > 0 ? 'var(--danger)' : 'var(--success)'}">${formatNumber(e.balance)}</td>
+        <td>${statusHtml}</td>
+      </tr>`;
+    }).join('');
   }
 
   // ===========================
