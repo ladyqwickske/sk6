@@ -77,8 +77,8 @@
     }
     .filter-group input:focus, .filter-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,122,109,0.15); }
     .btn {
-      background: var(--primary); color: #fff; border: none; border-radius: 8px;
-      padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9em; white-space: nowrap;
+      background: var(--primary); color: #fff; border: none; border-radius: 6px;
+      padding: 5px 12px; cursor: pointer; font-weight: 600; font-size: 0.82em; white-space: nowrap;
     }
     .btn:hover { background: var(--primary-hover); }
     .btn.secondary { background: #c4b99a; color: var(--text); }
@@ -246,9 +246,9 @@
       <label>Date To</label>
       <input type="date" id="filterDateTo">
     </div>
-    <div class="filter-group" style="justify-content:flex-end;">
+    <div class="filter-group" style="justify-content:flex-end; flex-direction:row; gap:6px; min-width:auto; flex:0;">
       <button class="btn" onclick="applyFilters()">🔍 Filter</button>
-      <button class="btn secondary" onclick="resetFilters()" style="margin-top:4px;">↻ Reset</button>
+      <button class="btn secondary" onclick="resetFilters()">↻ Reset</button>
     </div>
   </div>
 
