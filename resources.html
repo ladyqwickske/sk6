@@ -554,10 +554,12 @@
   // ===========================
   // DATA LOADING
   // ===========================
+  const DEFAULT_DAYS = 10;
+
   async function loadResourceData() {
     try {
       const [result, members] = await Promise.all([
-        callFunction('getResourceContributions'),
+        callFunction('getResourceContributions', [DEFAULT_DAYS]),
         callFunction('getMembersList').catch(() => [])
       ]);
       if (result && result.success) {
@@ -574,6 +576,9 @@
         formerMembersList = Array.isArray(result.formerMembers) ? result.formerMembers : [];
         populateFilters(result.resources || [], result.members || []);
         populateDailyDonorsDates();
+        // Set Date From to match loaded window
+        const cutoff = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate() - DEFAULT_DAYS));
+        document.getElementById('filterDateFrom').value = cutoff.toISOString().split('T')[0];
         applyFilters();
         document.getElementById('loadingDiv').style.display = 'none';
         document.getElementById('tableContainer').style.display = 'block';
