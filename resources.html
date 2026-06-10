@@ -90,13 +90,14 @@
       gap: 12px; margin-bottom: 20px;
     }
     .summary-card {
-      background: #fff; border-radius: 10px; padding: 14px 16px;
+      background: #fff; border-radius: 10px; padding: 12px 14px;
       border: 1px solid var(--border); text-align: center;
     }
     .summary-card .card-label { font-size: 0.75em; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
     .summary-card .card-value { font-size: 1.4em; font-weight: 700; color: var(--primary); }
     .summary-card .card-value.positive { color: var(--success); }
     .summary-card .card-value.negative { color: var(--danger); }
+    .summary-card .card-sub { font-size: 0.7em; color: var(--text-muted); margin-top: 2px; }
 
     /* Table */
     .table-container { overflow-x: auto; }
@@ -255,20 +256,24 @@
   <!-- Summary Cards -->
   <div class="summary-cards" id="summaryCards">
     <div class="summary-card">
-      <div class="card-label">Total Contributed</div>
-      <div class="card-value positive" id="totalContributed">—</div>
+      <div class="card-label">🌿 Forest Essence</div>
+      <div class="card-value" id="sumForestEssence">—</div>
+      <div class="card-sub" id="subForestEssence"></div>
     </div>
     <div class="summary-card">
-      <div class="card-label">Total Distributed</div>
-      <div class="card-value negative" id="totalDistributed">—</div>
+      <div class="card-label">🐉 Dragon Coins</div>
+      <div class="card-value" id="sumDragonCoins">—</div>
+      <div class="card-sub" id="subDragonCoins"></div>
     </div>
     <div class="summary-card">
-      <div class="card-label">Net Balance</div>
-      <div class="card-value" id="netBalance">—</div>
+      <div class="card-label">🌱 Magic Seeds</div>
+      <div class="card-value" id="sumMagicSeeds">—</div>
+      <div class="card-sub" id="subMagicSeeds"></div>
     </div>
     <div class="summary-card">
-      <div class="card-label">Records Shown</div>
-      <div class="card-value" id="recordCount">—</div>
+      <div class="card-label">📜 Scientific Tractate</div>
+      <div class="card-value" id="sumScientificTractate">—</div>
+      <div class="card-sub" id="subScientificTractate"></div>
     </div>
   </div>
 
@@ -683,19 +688,39 @@
   // SUMMARY CARDS
   // ===========================
   function updateSummaryCards() {
-    let contributed = 0, distributed = 0;
+    const resMap = {};
+    const topByRes = {}; // track per-player totals per resource
     filteredData.forEach(r => {
-      if (r.amount > 0) contributed += r.amount;
-      else distributed += Math.abs(r.amount);
+      const key = r.resource;
+      if (!resMap[key]) resMap[key] = {in:0,out:0,n:0};
+      if (r.amount > 0) { resMap[key].in += r.amount; }
+      else { resMap[key].out += Math.abs(r.amount); }
+      resMap[key].n++;
+      // Track top contributor (positive only)
+      if (r.amount > 0) {
+        if (!topByRes[key]) topByRes[key] = {};
+        topByRes[key][r.member] = (topByRes[key][r.member] || 0) + r.amount;
+      }
     });
-    const net = contributed - distributed;
-
-    document.getElementById('totalContributed').textContent = formatNumber(contributed);
-    document.getElementById('totalDistributed').textContent = formatNumber(distributed);
-    const netEl = document.getElementById('netBalance');
-    netEl.textContent = (net >= 0 ? '+' : '') + formatNumber(net);
-    netEl.className = 'card-value ' + (net >= 0 ? 'positive' : 'negative');
-    document.getElementById('recordCount').textContent = filteredData.length.toLocaleString();
+    const ids = { 'Forest Essence':'ForestEssence', 'Dragon Coins':'DragonCoins', 'Magic Seeds':'MagicSeeds', 'Scientific Tractate':'ScientificTractate' };
+    Object.entries(ids).forEach(([res, id]) => {
+      const d = resMap[res] || {in:0,out:0,n:0};
+      const el = document.getElementById('sum' + id);
+      const sub = document.getElementById('sub' + id);
+      if (res === 'Dragon Coins') {
+        const net = d.in - d.out;
+        el.textContent = (net >= 0 ? '+' : '') + formatNumber(net);
+        el.className = 'card-value ' + (net >= 0 ? 'positive' : 'negative');
+        sub.textContent = '▲ ' + formatNumber(d.in) + '  ▼ ' + formatNumber(d.out);
+      } else {
+        el.textContent = formatNumber(d.in);
+        el.className = 'card-value positive';
+        // Find top contributor
+        const players = topByRes[res] || {};
+        const top = Object.entries(players).sort((a,b) => b[1] - a[1])[0];
+        sub.textContent = top ? '👑 ' + top[0] + ' — ' + formatNumber(top[1]) : d.n + ' records';
+      }
+    });
   }
 
   // ===========================
