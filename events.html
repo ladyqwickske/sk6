@@ -324,8 +324,9 @@
       <h3 id="typeFormTitle">➕ Add Event Type</h3>
       <div class="form-row">
         <input type="text" id="typeName" placeholder="Type Name">
-        <select id="typeMethod" onchange="toggleChestTypesSection()">
+        <select id="typeMethod" onchange="toggleMethodSections()">
           <option value="chest-based">Chest-based</option>
+          <option value="troop-based">Troop-Based</option>
           <option value="manual-entry">Manual Entry</option>
           <option value="period-marker">Period Marker</option>
         </select>
@@ -336,6 +337,12 @@
           <div style="padding:12px; color:var(--text-muted); text-align:center;">Loading chest types...</div>
         </div>
         <div class="note">Select which chest types count for this event type.</div>
+      </div>
+      <div id="troopTargetSection" style="display:none; margin-bottom:12px; padding:12px; border:1px solid var(--border); border-radius:8px; background:rgba(26,122,109,0.04);">
+        <label style="font-weight:600; color:var(--primary); margin-bottom:8px; display:block;">🎯 Troop Category Targets</label>
+        <div class="note" style="margin-bottom:8px;">Set point targets per troop category. Categories match the highest troop level recorded for each member (e.g. G7 = Guard level 7).</div>
+        <div id="troopTargetRows"></div>
+        <button class="btn secondary" onclick="addTroopTargetRow()" style="margin-top:6px; font-size:0.8em;">+ Add Category</button>
       </div>
       <div class="form-row">
         <input type="text" id="typeDescription" placeholder="Description">
@@ -352,6 +359,7 @@
             <th onclick="sortTypes('trackingMethod')">Method</th>
             <th onclick="sortTypes('chestTypes')">Chest Types</th>
             <th onclick="sortTypes('threshold')">Threshold</th>
+            <th>Troop Targets</th>
             <th id="typeActionsHeader" style="display:none">Actions</th>
           </tr>
         </thead>
@@ -540,9 +548,60 @@
     });
   }
 
-  function toggleChestTypesSection() {
+  function toggleChestTypesSection() { toggleMethodSections(); }
+  function toggleMethodSections() {
     const method = document.getElementById('typeMethod').value;
     document.getElementById('chestTypesSection').style.display = method === 'chest-based' ? 'block' : 'none';
+    document.getElementById('troopTargetSection').style.display = method === 'troop-based' ? 'block' : 'none';
+  }
+
+  // Troop target row management
+  const TROOP_CATEGORIES = ['G4','G5','G6','G7','T7','G8','T8','G9','T9'];
+
+  function addTroopTargetRow(category, points) {
+    const container = document.getElementById('troopTargetRows');
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:4px;';
+    const sel = document.createElement('select');
+    sel.className = 'troop-cat-select';
+    sel.style.cssText = 'padding:4px 6px; border:1px solid var(--border); border-radius:4px; font-size:0.85em;';
+    TROOP_CATEGORIES.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      if (c === category) o.selected = true;
+      sel.appendChild(o);
+    });
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.placeholder = 'Points target';
+    inp.className = 'troop-pts-input';
+    inp.style.cssText = 'padding:4px 6px; border:1px solid var(--border); border-radius:4px; font-size:0.85em; width:120px;';
+    if (points) inp.value = points;
+    const btn = document.createElement('button');
+    btn.textContent = '✕'; btn.className = 'btn secondary';
+    btn.style.cssText = 'padding:2px 8px; font-size:0.8em;';
+    btn.onclick = () => row.remove();
+    row.appendChild(sel); row.appendChild(inp); row.appendChild(btn);
+    container.appendChild(row);
+  }
+
+  function getTroopTargetsJson() {
+    const rows = document.querySelectorAll('#troopTargetRows > div');
+    const targets = {};
+    rows.forEach(row => {
+      const cat = row.querySelector('.troop-cat-select')?.value;
+      const pts = Number(row.querySelector('.troop-pts-input')?.value) || 0;
+      if (cat && pts > 0) targets[cat] = pts;
+    });
+    return Object.keys(targets).length > 0 ? JSON.stringify(targets) : '';
+  }
+
+  function setTroopTargetsFromJson(jsonStr) {
+    document.getElementById('troopTargetRows').innerHTML = '';
+    if (!jsonStr) return;
+    try {
+      const targets = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
+      Object.entries(targets).forEach(([cat, pts]) => addTroopTargetRow(cat, pts));
+    } catch (e) { /* ignore invalid JSON */ }
   }
 
   function populateEventTypeDropdown() {
@@ -611,11 +670,20 @@
     });
     sorted.forEach(et => {
       const tr = document.createElement('tr');
+      // Format troop targets for display
+      let troopDisplay = '-';
+      if (et.troopTargets) {
+        try {
+          const t = typeof et.troopTargets === 'string' ? JSON.parse(et.troopTargets) : et.troopTargets;
+          troopDisplay = Object.entries(t).map(([k,v]) => k + ':' + Number(v).toLocaleString()).join(', ');
+        } catch(e) { troopDisplay = et.troopTargets; }
+      }
       tr.innerHTML = `
         <td><strong>${escapeHtml(et.name)}</strong></td>
         <td>${et.trackingMethod}</td>
         <td>${escapeHtml(et.chestTypes)}</td>
         <td>${et.threshold || '-'}</td>
+        <td style="font-size:0.8em;">${troopDisplay}</td>
         ${isLoggedIn ? `<td class="event-actions">
           <button onclick="editEventType('${escapeAttr(et.name)}')">✏️</button>
           <button onclick="deleteEventType('${escapeAttr(et.name)}')">🗑️</button>
@@ -689,14 +757,15 @@
     const chestTypes = method === 'chest-based' ? getSelectedChestTypes().join(',') : '';
     const description = document.getElementById('typeDescription').value;
     const threshold = document.getElementById('typeThreshold').value;
+    const troopTargets = method === 'troop-based' ? getTroopTargetsJson() : '';
     if (!name || !method) { showToast('Name and method required', 'error'); return; }
 
     try {
       let result;
       if (editingType) {
-        result = await callFunction('updateEventType', [editingType, name, method, chestTypes, description, threshold ? Number(threshold) : 0]);
+        result = await callFunction('updateEventType', [editingType, name, method, chestTypes, description, threshold ? Number(threshold) : 0, troopTargets]);
       } else {
-        result = await callFunction('addEventType', [name, method, chestTypes, description, threshold ? Number(threshold) : 0]);
+        result = await callFunction('addEventType', [name, method, chestTypes, description, threshold ? Number(threshold) : 0, troopTargets]);
       }
       showToast(result?.message || 'Done', result?.success ? 'success' : 'error');
       if (result?.success) { cancelTypeEdit(); loadEventTypes(); }
@@ -709,8 +778,9 @@
     editingType = name;
     document.getElementById('typeName').value = et.name;
     document.getElementById('typeMethod').value = et.trackingMethod;
-    toggleChestTypesSection();
+    toggleMethodSections();
     setSelectedChestTypes(et.chestTypes);
+    setTroopTargetsFromJson(et.troopTargets);
     document.getElementById('typeDescription').value = et.description || '';
     document.getElementById('typeThreshold').value = et.threshold || '';
     document.getElementById('typeFormTitle').textContent = '✏️ Edit Event Type';
@@ -721,8 +791,9 @@
     editingType = null;
     document.getElementById('typeName').value = '';
     document.getElementById('typeMethod').value = 'chest-based';
-    toggleChestTypesSection();
+    toggleMethodSections();
     document.querySelectorAll('#chestTypesList input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+    document.getElementById('troopTargetRows').innerHTML = '';
     document.getElementById('typeDescription').value = '';
     document.getElementById('typeThreshold').value = '';
     document.getElementById('typeFormTitle').textContent = '➕ Add Event Type';
