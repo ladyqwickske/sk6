@@ -417,6 +417,19 @@
   let availableChestTypes = [];
   let isLoggedIn = false;
 
+  // Category badge colors (shared across troop UI)
+  const CAT_COLORS = {
+    G4: { bg: '#c0c0c0', fg: '#333' }, G5: { bg: '#c0c0c0', fg: '#333' },
+    G6: { bg: '#fdd835', fg: '#333' }, G7: { bg: '#ff9800', fg: '#fff' },
+    T7: { bg: '#e53935', fg: '#fff' }, G8: { bg: '#00bcd4', fg: '#fff' },
+    T8: { bg: '#1565c0', fg: '#fff' }, G9: { bg: '#ba68c8', fg: '#fff' },
+    T9: { bg: '#7b1fa2', fg: '#fff' }
+  };
+  function catBadgeHtml(cat) {
+    const c = CAT_COLORS[cat] || { bg: '#9e9e9e', fg: '#fff' };
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.8em;font-weight:700;background:${c.bg};color:${c.fg}">${escapeHtml(cat)}</span>`;
+  }
+
   // Sort state
   let eventsSortField = 'startDate';
   let eventsSortAsc = false;
@@ -941,7 +954,7 @@
     const entries = Object.entries(targets);
     if (entries.length > 0) {
       summary.innerHTML = entries.map(([cat, pts]) =>
-        `<span style="display:inline-block;padding:2px 8px;margin:2px;border-radius:10px;font-size:0.8em;font-weight:700;background:#37474f;color:#cfd8dc;">${escapeHtml(cat)}</span> ${Number(pts).toLocaleString()}`
+        `${catBadgeHtml(cat)} ${Number(pts).toLocaleString()}`
       ).join(' &nbsp;│&nbsp; ');
       info.style.display = 'block';
     } else {
@@ -1013,7 +1026,7 @@
         // Style category badge
         if (h === 'Troop Category') {
           if (val && val !== 'Unknown' && val !== '-') {
-            return `<td style="text-align:center"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.8em;font-weight:700;background:#37474f;color:#cfd8dc;">${escapeHtml(val)}</span></td>`;
+            return `<td style="text-align:center">${catBadgeHtml(val)}</td>`;
           }
           return `<td style="text-align:center;color:var(--text-muted)">—</td>`;
         }
