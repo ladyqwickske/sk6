@@ -277,6 +277,7 @@
           <th onclick="sortTable('name')">Name</th>
           <th onclick="sortTable('joinDate')">Joined</th>
           <th onclick="sortTable('heroLevel')">Hero</th>
+          <th onclick="sortTable('category')" title="Troop Category">Cat</th>
           <th onclick="sortTable('G')" title="Guardsmen">G</th>
           <th onclick="sortTable('M')" title="Monsters">M</th>
           <th onclick="sortTable('S')" title="Specialists">S</th>
@@ -473,6 +474,10 @@
         case 'name': va = keyA; vb = keyB; break;
         case 'joinDate': va = a.joinDate || ''; vb = b.joinDate || ''; break;
         case 'heroLevel': va = hA ? hA.level : -1; vb = hB ? hB.level : -1; break;
+        case 'category':
+          va = CATEGORY_ORDER.indexOf(determineTroopCategory(tA.G, tA.M, tA.S));
+          vb = CATEGORY_ORDER.indexOf(determineTroopCategory(tB.G, tB.M, tB.S));
+          break;
         case 'G': case 'M': case 'S': case 'E': case 'C':
           va = tA[sortField] || 0; vb = tB[sortField] || 0; break;
         default: va = 0; vb = 0;
@@ -491,10 +496,13 @@
         ? `<span class="hero-badge" style="background:${getHeroBg(hero.level)};color:${getHeroFg(hero.level)}" title="Updated: ${hero.timestamp || '?'}">${hero.level}</span>`
         : '<span style="color:var(--text-muted)">—</span>';
 
+      const cat = determineTroopCategory(troops.G, troops.M, troops.S);
+
       tr.innerHTML = `
         <td><strong>${escapeHtml(m.name)}</strong></td>
         <td>${escapeHtml(m.joinDate)}</td>
         <td style="text-align:center">${heroHtml}</td>
+        <td style="text-align:center">${categoryBadge(cat)}</td>
         <td style="text-align:center">${troopBadge('g', troops.G)}</td>
         <td style="text-align:center">${troopBadge('m', troops.M)}</td>
         <td style="text-align:center">${troopBadge('s', troops.S)}</td>
@@ -509,6 +517,46 @@
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  // Troop category order for sorting (low → high)
+  const CATEGORY_ORDER = [null, 'G4', 'G5', 'G6', 'G7', 'T7', 'G8', 'T8', 'G9', 'T9'];
+
+  function determineTroopCategory(gLevel, mLevel, sLevel) {
+    const g = Number(gLevel);
+    const m = Number(mLevel);
+    const s = Number(sLevel);
+    const hasG = !isNaN(g) && g > 0;
+    const hasM = !isNaN(m) && m > 0;
+    const hasS = !isNaN(s) && s > 0;
+    if (!hasG) return null;
+    if (g >= 9 && hasM && m >= 9 && hasS && s >= 9) return 'T9';
+    if (g >= 9) return 'G9';
+    if (g >= 8 && hasM && m >= 8 && hasS && s >= 8) return 'T8';
+    if (g >= 8) return 'G8';
+    if (g >= 7 && hasM && m >= 7 && hasS && s >= 7) return 'T7';
+    if (g >= 7) return 'G7';
+    if (g >= 6) return 'G6';
+    if (g >= 5) return 'G5';
+    if (g >= 4) return 'G4';
+    return null;
+  }
+
+  function categoryBadge(cat) {
+    if (!cat) return '<span style="color:var(--text-muted)">—</span>';
+    const colors = {
+      G4: { bg: '#e0e0e0', fg: '#424242' },
+      G5: { bg: '#bcaaa4', fg: '#3e2723' },
+      G6: { bg: '#a5d6a7', fg: '#1b5e20' },
+      G7: { bg: '#81c784', fg: '#1b5e20' },
+      T7: { bg: '#4caf50', fg: '#ffffff' },
+      G8: { bg: '#64b5f6', fg: '#0d47a1' },
+      T8: { bg: '#1e88e5', fg: '#ffffff' },
+      G9: { bg: '#ce93d8', fg: '#4a148c' },
+      T9: { bg: '#7b1fa2', fg: '#ffffff' }
+    };
+    const c = colors[cat] || { bg: '#e0e0e0', fg: '#424242' };
+    return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.75em;font-weight:700;background:${c.bg};color:${c.fg}">${cat}</span>`;
   }
 
   function troopBadge(type, level) {
