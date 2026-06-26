@@ -445,9 +445,9 @@
     return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.8em;font-weight:700;background:${c.bg};color:${c.fg}">${escapeHtml(cat)}</span>`;
   }
 
-  // Sort state
-  let eventsSortField = 'startDate';
-  let eventsSortAsc = false;
+  // Sort state (null = default two-level: eventType asc, startDate desc)
+  let eventsSortField = null;
+  let eventsSortAsc = true;
   let eventsFilter = 'active';
 
   function setEventFilter(filter, btn) {
@@ -457,16 +457,50 @@
     renderEvents();
   }
 
-  // Classify an event relative to today
+  // Find current & previous period-marker ranges (cached per render cycle)
+  let _periodRanges = null;
+  function getPeriodRanges_() {
+    if (_periodRanges) return _periodRanges;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const periods = (eventsData || [])
+      .filter(e => e.participationMethod === 'period-marker')
+      .sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+    let current = null, previous = null;
+    for (let i = 0; i < periods.length; i++) {
+      const s = periods[i].startDate ? new Date(periods[i].startDate + 'T00:00:00') : null;
+      const e = periods[i].endDate   ? new Date(periods[i].endDate   + 'T23:59:59') : null;
+      if (s && e && s <= today && e >= today) {
+        current = { start: s, end: e };
+        // Previous = the period-marker just before this one
+        for (let j = i - 1; j >= 0; j--) {
+          const ps = periods[j].startDate ? new Date(periods[j].startDate + 'T00:00:00') : null;
+          const pe = periods[j].endDate   ? new Date(periods[j].endDate   + 'T23:59:59') : null;
+          if (ps && pe) { previous = { start: ps, end: pe }; break; }
+        }
+        break;
+      }
+    }
+    if (!current) {
+      // Fallback: 14-day window
+      const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - 14);
+      current = { start: cutoff, end: today };
+    }
+    _periodRanges = { current, previous };
+    return _periodRanges;
+  }
+
+  // Classify an event relative to the current & previous periods
   function classifyEvent(ev) {
     const today = new Date(); today.setHours(0,0,0,0);
-    const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - 14);
+    const { current, previous } = getPeriodRanges_();
     const start = ev.startDate ? new Date(ev.startDate + 'T00:00:00') : null;
     const end = ev.endDate ? new Date(ev.endDate + 'T23:59:59') : null;
     if (!start || !end) return 'other';
-    if (start > today) return 'future';
-    if (end >= today) return 'active';
-    if (end >= cutoff) return 'recent';
+    if (start > current.end) return 'future';
+    // Active = overlaps with the current period
+    if (end >= current.start && start <= current.end) return 'active';
+    // Recent = overlaps with the previous period
+    if (previous && end >= previous.start && start <= previous.end) return 'recent';
     return 'ended';
   }
   let typesSortField = 'name';
@@ -722,6 +756,7 @@
   }
 
   function renderEvents() {
+    _periodRanges = null;         // bust period cache on each render
     const tbody = document.getElementById('eventsTableBody');
     tbody.innerHTML = '';
     let filtered = [...eventsData];
@@ -735,6 +770,12 @@
       });
     }
     const sorted = filtered.sort((a, b) => {
+      // Default two-level sort: eventType asc, then startDate desc
+      if (!eventsSortField) {
+        const typeA = (a.eventType || '').toLowerCase(), typeB = (b.eventType || '').toLowerCase();
+        if (typeA !== typeB) return typeA.localeCompare(typeB);
+        return (b.startDate || '').localeCompare(a.startDate || '');
+      }
       let va = a[eventsSortField] || '', vb = b[eventsSortField] || '';
       if (eventsSortField === 'targetPoints') { va = Number(va) || 0; vb = Number(vb) || 0; }
       if (typeof va === 'number') return eventsSortAsc ? va - vb : vb - va;
@@ -954,7 +995,7 @@
     const optionHtml = (e) => `<option value="${escapeAttr(e.eventName)}">${escapeHtml(e.eventName)} (${e.startDate} \u2192 ${e.endDate})</option>`;
     let html = `<option value="">${placeholder}</option>`;
     if (active.length) html += `<optgroup label="\ud83d\udfe2 Active">${active.map(optionHtml).join('')}</optgroup>`;
-    if (recent.length) html += `<optgroup label="\ud83d\udd50 Recent (last 14 days)">${recent.map(optionHtml).join('')}</optgroup>`;
+    if (recent.length) html += `<optgroup label="\ud83d\udd50 Recent (prev. period)">${recent.map(optionHtml).join('')}</optgroup>`;
     if (future.length) html += `<optgroup label="\ud83d\udcc5 Upcoming">${future.map(optionHtml).join('')}</optgroup>`;
     if (older.length) html += `<optgroup label="\ud83d\udcc1 Older">${older.map(optionHtml).join('')}</optgroup>`;
     return html;
