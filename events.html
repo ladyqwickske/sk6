@@ -95,6 +95,12 @@
     .method-manual { background: #d6eaf8; color: #2471a3; }
     .method-period { background: #e8daef; color: #7d3c98; }
 
+    .filter-btn {
+      background: #ede5d5 !important; color: var(--text) !important; border: 1px solid var(--border) !important;
+      border-radius: 8px !important; padding: 5px 12px !important; font-size: 0.82em !important; font-weight: 500 !important;
+    }
+    .filter-btn.active { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; }
+
     .event-actions button {
       background: #ede5d5; color: var(--text); border: none; border-radius: 4px;
       padding: 4px 8px; cursor: pointer; font-size: 0.8em; margin-right: 4px;
@@ -203,6 +209,13 @@
 
   <!-- ===== MANAGE EVENTS TAB ===== -->
   <div class="tab-panel" id="manageTab">
+    <div style="display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+      <span style="font-size:0.85em; color:var(--text-muted); margin-right:4px;">Show:</span>
+      <button class="btn filter-btn active" onclick="setEventFilter('active', this)">🟢 Active</button>
+      <button class="btn filter-btn" onclick="setEventFilter('recent', this)">🕐 Recent</button>
+      <button class="btn filter-btn" onclick="setEventFilter('all', this)">📋 All</button>
+      <button class="btn filter-btn" onclick="setEventFilter('ended', this)">📁 Ended</button>
+    </div>
     <div class="loading" id="eventsLoading"><div class="spinner"></div><br>Loading events...</div>
     <div class="table-container" id="eventsTableContainer" style="display:none">
       <table>
@@ -435,6 +448,27 @@
   // Sort state
   let eventsSortField = 'startDate';
   let eventsSortAsc = false;
+  let eventsFilter = 'active';
+
+  function setEventFilter(filter, btn) {
+    eventsFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    renderEvents();
+  }
+
+  // Classify an event relative to today
+  function classifyEvent(ev) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - 14);
+    const start = ev.startDate ? new Date(ev.startDate + 'T00:00:00') : null;
+    const end = ev.endDate ? new Date(ev.endDate + 'T23:59:59') : null;
+    if (!start || !end) return 'other';
+    if (start > today) return 'future';
+    if (end >= today) return 'active';
+    if (end >= cutoff) return 'recent';
+    return 'ended';
+  }
   let typesSortField = 'name';
   let typesSortAsc = true;
   let partSortField = null;
@@ -690,12 +724,25 @@
   function renderEvents() {
     const tbody = document.getElementById('eventsTableBody');
     tbody.innerHTML = '';
-    const sorted = [...eventsData].sort((a, b) => {
+    let filtered = [...eventsData];
+    if (eventsFilter !== 'all') {
+      filtered = filtered.filter(ev => {
+        const cls = classifyEvent(ev);
+        if (eventsFilter === 'active') return cls === 'active';
+        if (eventsFilter === 'recent') return cls === 'active' || cls === 'recent';
+        if (eventsFilter === 'ended') return cls === 'ended';
+        return true;
+      });
+    }
+    const sorted = filtered.sort((a, b) => {
       let va = a[eventsSortField] || '', vb = b[eventsSortField] || '';
       if (eventsSortField === 'targetPoints') { va = Number(va) || 0; vb = Number(vb) || 0; }
       if (typeof va === 'number') return eventsSortAsc ? va - vb : vb - va;
       return eventsSortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
     });
+    if (sorted.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No events match this filter.</td></tr>';
+    }
     sorted.forEach(ev => {
       const methodClass = ev.participationMethod === 'chest-based' ? 'method-chest' :
         ev.participationMethod === 'period-marker' ? 'method-period' : 'method-manual';
@@ -892,20 +939,34 @@
   }
 
   // POPULATE EVENT DROPDOWNS
+  function buildGroupedOptions(events, placeholder) {
+    const active = [], recent = [], older = [], future = [];
+    events.forEach(e => {
+      const cls = classifyEvent(e);
+      if (cls === 'active') active.push(e);
+      else if (cls === 'recent') recent.push(e);
+      else if (cls === 'future') future.push(e);
+      else older.push(e);
+    });
+    // Sort each group by start date descending
+    const byDateDesc = (a, b) => (b.startDate || '').localeCompare(a.startDate || '');
+    [active, recent, older, future].forEach(g => g.sort(byDateDesc));
+    const optionHtml = (e) => `<option value="${escapeAttr(e.eventName)}">${escapeHtml(e.eventName)} (${e.startDate} \u2192 ${e.endDate})</option>`;
+    let html = `<option value="">${placeholder}</option>`;
+    if (active.length) html += `<optgroup label="\ud83d\udfe2 Active">${active.map(optionHtml).join('')}</optgroup>`;
+    if (recent.length) html += `<optgroup label="\ud83d\udd50 Recent (last 14 days)">${recent.map(optionHtml).join('')}</optgroup>`;
+    if (future.length) html += `<optgroup label="\ud83d\udcc5 Upcoming">${future.map(optionHtml).join('')}</optgroup>`;
+    if (older.length) html += `<optgroup label="\ud83d\udcc1 Older">${older.map(optionHtml).join('')}</optgroup>`;
+    return html;
+  }
+
   function populateEventDropdowns() {
-    const chestSelect = document.getElementById('chestEventSelect');
-    const manualSelect = document.getElementById('manualEventSelect');
-    const troopSelect = document.getElementById('troopEventSelect');
     const chestEvents = eventsData.filter(e => e.participationMethod === 'chest-based');
     const manualEvents = eventsData.filter(e => e.participationMethod === 'manual-entry');
     const troopEvents = eventsData.filter(e => e.participationMethod === 'troop-based');
-
-    chestSelect.innerHTML = '<option value="">-- Select Chest Event --</option>' +
-      chestEvents.map(e => `<option value="${escapeAttr(e.eventName)}">${escapeHtml(e.eventName)} (${e.startDate} → ${e.endDate})</option>`).join('');
-    manualSelect.innerHTML = '<option value="">-- Select Manual Event --</option>' +
-      manualEvents.map(e => `<option value="${escapeAttr(e.eventName)}">${escapeHtml(e.eventName)} (${e.startDate} → ${e.endDate})</option>`).join('');
-    troopSelect.innerHTML = '<option value="">-- Select Troop Event --</option>' +
-      troopEvents.map(e => `<option value="${escapeAttr(e.eventName)}">${escapeHtml(e.eventName)} (${e.startDate} → ${e.endDate})</option>`).join('');
+    document.getElementById('chestEventSelect').innerHTML = buildGroupedOptions(chestEvents, '-- Select Chest Event --');
+    document.getElementById('manualEventSelect').innerHTML = buildGroupedOptions(manualEvents, '-- Select Manual Event --');
+    document.getElementById('troopEventSelect').innerHTML = buildGroupedOptions(troopEvents, '-- Select Troop Event --');
   }
 
   // CHEST EVENT TAB
