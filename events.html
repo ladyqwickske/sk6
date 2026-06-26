@@ -506,6 +506,15 @@
     const start = ev.startDate ? new Date(ev.startDate + 'T00:00:00') : null;
     const end = ev.endDate ? new Date(ev.endDate + 'T23:59:59') : null;
     if (!start || !end) return 'other';
+    // Period-marker events define the periods themselves — classify directly vs today
+    if (ev.participationMethod === 'period-marker') {
+      if (start > today) return 'future';
+      if (end < today) {
+        if (previous && end >= previous.start && start <= previous.end) return 'recent';
+        return 'ended';
+      }
+      return 'active';
+    }
     if (start > current.end) return 'future';
     // Active = overlaps with the current period
     if (end >= current.start && start <= current.end) return 'active';
