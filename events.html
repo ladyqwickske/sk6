@@ -215,6 +215,10 @@
       <button class="btn filter-btn" onclick="setEventFilter('recent', this)">🕐 Recent</button>
       <button class="btn filter-btn" onclick="setEventFilter('all', this)">📋 All</button>
       <button class="btn filter-btn" onclick="setEventFilter('ended', this)">📁 Ended</button>
+      <span style="font-size:0.85em; color:var(--text-muted); margin-left:8px;">Type:</span>
+      <select id="eventTypeFilter" onchange="setEventTypeFilter(this.value)" style="background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:4px 8px; font-size:0.82em; cursor:pointer;">
+        <option value="">All Types</option>
+      </select>
     </div>
     <div class="loading" id="eventsLoading"><div class="spinner"></div><br>Loading events...</div>
     <div class="table-container" id="eventsTableContainer" style="display:none">
@@ -449,6 +453,12 @@
   let eventsSortField = null;
   let eventsSortAsc = true;
   let eventsFilter = 'active';
+  let eventsTypeFilter = '';
+
+  function setEventTypeFilter(type) {
+    eventsTypeFilter = type;
+    renderEvents();
+  }
 
   function setEventFilter(filter, btn) {
     eventsFilter = filter;
@@ -759,6 +769,17 @@
     _periodRanges = null;         // bust period cache on each render
     const tbody = document.getElementById('eventsTableBody');
     tbody.innerHTML = '';
+
+    // Populate event type dropdown from all events
+    var typeSelect = document.getElementById('eventTypeFilter');
+    if (typeSelect) {
+      var types = []; var seen = {};
+      eventsData.forEach(function(e) { if (e.eventType && !seen[e.eventType]) { seen[e.eventType] = 1; types.push(e.eventType); } });
+      types.sort();
+      var prev = eventsTypeFilter;
+      typeSelect.innerHTML = '<option value="">All Types</option>' + types.map(function(t) { return '<option value="' + t + '"' + (t === prev ? ' selected' : '') + '>' + t + '</option>'; }).join('');
+    }
+
     let filtered = [...eventsData];
     if (eventsFilter !== 'all') {
       filtered = filtered.filter(ev => {
@@ -768,6 +789,9 @@
         if (eventsFilter === 'ended') return cls === 'ended';
         return true;
       });
+    }
+    if (eventsTypeFilter) {
+      filtered = filtered.filter(ev => ev.eventType === eventsTypeFilter);
     }
     const sorted = filtered.sort((a, b) => {
       // Default two-level sort: eventType asc, then startDate desc
