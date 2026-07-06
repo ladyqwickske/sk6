@@ -276,11 +276,25 @@
         <select id="manualMember" style="flex:1; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
           <option value="">Select member...</option>
         </select>
-        <input type="number" id="manualPoints" placeholder="Points" style="flex:0.5; min-width:80px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;" onkeypress="if(event.key==='Enter') saveManualEntry()">
-        <button class="btn" onclick="saveManualEntry()">💾 Save</button>
+        <input type="number" id="manualPoints" placeholder="Points" style="flex:0.5; min-width:80px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;" onkeypress="if(event.key==='Enter'){var bp=document.getElementById('manualBatchPanel');if(bp&&bp.style.display!=='none'){addToManualBatch();}else{saveManualEntry();}}">
+        <button class="btn" onclick="var bp=document.getElementById('manualBatchPanel');if(bp&&bp.style.display!=='none'){addToManualBatch();}else{saveManualEntry();}">💾 Save</button>
+        <button class="btn" style="background:#7c3aed;" onclick="toggleManualBatch()">📋 Batch</button>
         <button class="btn secondary" onclick="fillNonParticipants()">Fill Non-Participants</button>
       </div>
       <div id="manualEntryStatus" style="font-size:0.85em; margin-top:6px;"></div>
+      <!-- Manual Batch Panel -->
+      <div id="manualBatchPanel" style="display:none; margin-top:10px; padding:12px; border:1px solid var(--border); border-radius:8px; background:rgba(124,58,237,0.04);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong style="color:#7c3aed;">⚡ Batch Entry — <span id="manualBatchCount" style="color:var(--success);">0</span> queued</strong>
+          <div><button class="btn" style="background:var(--success); padding:4px 12px; font-size:0.85em;" onclick="saveManualBatch()">💾 Save All</button><button class="btn secondary" style="padding:4px 12px; font-size:0.85em; margin-left:4px;" onclick="toggleManualBatch()">✖ Close</button></div>
+        </div>
+        <p style="font-size:0.8em; color:var(--text-muted); margin-bottom:8px;">Use the Member dropdown & Points field above, press Enter to queue. Click Save All when done.</p>
+        <div id="manualBatchStatus" style="font-size:0.85em; margin-bottom:6px;"></div>
+        <div style="max-height:40vh; overflow-y:auto;"><table style="width:100%;">
+          <thead><tr><th style="text-align:left; padding:4px 8px;">Member</th><th style="text-align:center; padding:4px 8px; width:90px;">Queued Pts</th><th style="text-align:center; padding:4px 8px; width:40px;"></th></tr></thead>
+          <tbody id="manualBatchBody"></tbody>
+        </table></div>
+      </div>
     </div>
     <div class="participation-section" id="manualParticipationSection" style="display:none">
       <h3 id="manualParticipationTitle">Participation</h3>
@@ -308,14 +322,28 @@
         <select id="troopMember" style="flex:1; min-width:140px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;">
           <option value="">Select member...</option>
         </select>
-        <input type="number" id="troopPoints" placeholder="Points" style="flex:0.5; min-width:80px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;" onkeypress="if(event.key==='Enter') saveTroopEntry()">
-        <button class="btn" onclick="saveTroopEntry()">💾 Save</button>
+        <input type="number" id="troopPoints" placeholder="Points" style="flex:0.5; min-width:80px; padding:8px 12px; background:#fff; border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:0.9em;" onkeypress="if(event.key==='Enter'){var bp=document.getElementById('troopBatchPanel');if(bp&&bp.style.display!=='none'){addToTroopBatch();}else{saveTroopEntry();}}">
+        <button class="btn" onclick="var bp=document.getElementById('troopBatchPanel');if(bp&&bp.style.display!=='none'){addToTroopBatch();}else{saveTroopEntry();}">💾 Save</button>
+        <button class="btn" style="background:#7c3aed;" onclick="toggleTroopBatch()">📋 Batch</button>
       </div>
       <div class="form-row" style="margin-top:8px;">
         <button class="btn" style="background:var(--primary);" onclick="calculateTroopParticipation()">🔄 Calculate Status</button>
         <button class="btn secondary" onclick="fillTroopNonParticipants()">🙅 Fill Non-Participants</button>
       </div>
       <div id="troopEntryStatus" style="font-size:0.85em; margin-top:6px;"></div>
+      <!-- Troop Batch Panel -->
+      <div id="troopBatchPanel" style="display:none; margin-top:10px; padding:12px; border:1px solid var(--border); border-radius:8px; background:rgba(124,58,237,0.04);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong style="color:#7c3aed;">⚡ Batch Entry — <span id="troopBatchCount" style="color:var(--success);">0</span> queued</strong>
+          <div><button class="btn" style="background:var(--success); padding:4px 12px; font-size:0.85em;" onclick="saveTroopBatch()">💾 Save All</button><button class="btn secondary" style="padding:4px 12px; font-size:0.85em; margin-left:4px;" onclick="toggleTroopBatch()">✖ Close</button></div>
+        </div>
+        <p style="font-size:0.8em; color:var(--text-muted); margin-bottom:8px;">Use the Member dropdown & Points field above, press Enter to queue. Click Save All when done.</p>
+        <div id="troopBatchStatus" style="font-size:0.85em; margin-bottom:6px;"></div>
+        <div style="max-height:40vh; overflow-y:auto;"><table style="width:100%;">
+          <thead><tr><th style="text-align:left; padding:4px 8px;">Member</th><th style="text-align:center; padding:4px 8px; width:90px;">Queued Pts</th><th style="text-align:center; padding:4px 8px; width:40px;"></th></tr></thead>
+          <tbody id="troopBatchBody"></tbody>
+        </table></div>
+      </div>
     </div>
     <div id="troopTargetInfo" style="display:none; margin-bottom:12px; padding:10px 14px; background:rgba(26,122,109,0.06); border:1px solid var(--border); border-radius:8px;">
       <strong style="color:var(--primary); font-size:0.85em;">🎯 Category Targets:</strong>
@@ -1345,6 +1373,138 @@
       status.innerHTML = '❌ Error: ' + err.message;
       status.style.color = 'var(--danger)';
     }
+  }
+
+  // ── MANUAL BATCH ENTRY ──
+  let manualBatchQueue = {};
+
+  function toggleManualBatch() {
+    const panel = document.getElementById('manualBatchPanel');
+    if (!panel) return;
+    if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    manualBatchQueue = {};
+    document.getElementById('manualBatchStatus').textContent = '';
+    renderManualBatchTable();
+    document.getElementById('manualMember').focus();
+  }
+
+  function renderManualBatchTable() {
+    const tbody = document.getElementById('manualBatchBody');
+    const countEl = document.getElementById('manualBatchCount');
+    const keys = Object.keys(manualBatchQueue);
+    if (countEl) countEl.textContent = keys.length;
+    if (keys.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:16px; color:var(--text-muted);">No entries queued. Use the form above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = keys.map(k => {
+      const e = manualBatchQueue[k];
+      return '<tr><td style="padding:4px 8px;">' + escapeHtml(e.name) + '</td>'
+        + '<td style="text-align:center; padding:4px 8px; color:var(--success); font-weight:700;">' + e.points + '</td>'
+        + '<td style="text-align:center; padding:4px 8px;"><button class="btn secondary" style="padding:1px 6px; font-size:0.75em;" onclick="removeManualBatchEntry(\'' + escapeAttr(k) + '\')">✖</button></td></tr>';
+    }).join('');
+  }
+
+  function addToManualBatch() {
+    const status = document.getElementById('manualEntryStatus');
+    status.textContent = '';
+    const memberSel = document.getElementById('manualMember');
+    const pointsInput = document.getElementById('manualPoints');
+    const name = memberSel.value;
+    const pts = parseInt(pointsInput.value, 10);
+    if (!name) { status.textContent = 'Select a member.'; status.style.color = 'var(--danger)'; return; }
+    if (isNaN(pts)) { status.textContent = 'Enter points.'; status.style.color = 'var(--danger)'; return; }
+    manualBatchQueue[name.toLowerCase()] = { name: name, points: pts };
+    status.textContent = '✓ Queued: ' + name + ' → ' + pts + ' pts'; status.style.color = 'var(--success)';
+    pointsInput.value = ''; memberSel.value = ''; memberSel.focus();
+    renderManualBatchTable();
+  }
+
+  function removeManualBatchEntry(key) { delete manualBatchQueue[key]; renderManualBatchTable(); }
+
+  async function saveManualBatch() {
+    const status = document.getElementById('manualBatchStatus');
+    status.textContent = ''; status.style.color = '';
+    if (!selectedEvent) { status.textContent = 'No event selected.'; status.style.color = 'var(--danger)'; return; }
+    const keys = Object.keys(manualBatchQueue);
+    if (keys.length === 0) { status.textContent = 'No entries queued.'; status.style.color = 'var(--danger)'; return; }
+    const records = keys.map(k => ({ memberName: manualBatchQueue[k].name, points: manualBatchQueue[k].points, notes: '', extra: '' }));
+    status.textContent = 'Saving ' + records.length + ' entries...'; status.style.color = 'var(--text-muted)';
+    try {
+      const result = await callFunction('batchRecordManualParticipation', [selectedEvent.eventName, records]);
+      if (result && result.success !== false) {
+        status.textContent = 'Saved ' + (result.successCount || records.length) + ' entries!'; status.style.color = 'var(--success)';
+        manualBatchQueue = {}; renderManualBatchTable();
+        onManualEventSelected();
+      } else { status.textContent = result?.message || 'Failed.'; status.style.color = 'var(--danger)'; }
+    } catch (err) { status.textContent = 'Error: ' + err.message; status.style.color = 'var(--danger)'; }
+  }
+
+  // ── TROOP BATCH ENTRY ──
+  let troopBatchQueue = {};
+
+  function toggleTroopBatch() {
+    const panel = document.getElementById('troopBatchPanel');
+    if (!panel) return;
+    if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    troopBatchQueue = {};
+    document.getElementById('troopBatchStatus').textContent = '';
+    renderTroopBatchTable();
+    document.getElementById('troopMember').focus();
+  }
+
+  function renderTroopBatchTable() {
+    const tbody = document.getElementById('troopBatchBody');
+    const countEl = document.getElementById('troopBatchCount');
+    const keys = Object.keys(troopBatchQueue);
+    if (countEl) countEl.textContent = keys.length;
+    if (keys.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:16px; color:var(--text-muted);">No entries queued. Use the form above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = keys.map(k => {
+      const e = troopBatchQueue[k];
+      return '<tr><td style="padding:4px 8px;">' + escapeHtml(e.name) + '</td>'
+        + '<td style="text-align:center; padding:4px 8px; color:var(--success); font-weight:700;">' + e.points + '</td>'
+        + '<td style="text-align:center; padding:4px 8px;"><button class="btn secondary" style="padding:1px 6px; font-size:0.75em;" onclick="removeTroopBatchEntry(\'' + escapeAttr(k) + '\')">✖</button></td></tr>';
+    }).join('');
+  }
+
+  function addToTroopBatch() {
+    const status = document.getElementById('troopEntryStatus');
+    status.textContent = '';
+    const memberSel = document.getElementById('troopMember');
+    const pointsInput = document.getElementById('troopPoints');
+    const name = memberSel.value;
+    const pts = parseInt(pointsInput.value, 10);
+    if (!name) { status.textContent = 'Select a member.'; status.style.color = 'var(--danger)'; return; }
+    if (isNaN(pts)) { status.textContent = 'Enter points.'; status.style.color = 'var(--danger)'; return; }
+    troopBatchQueue[name.toLowerCase()] = { name: name, points: pts };
+    status.textContent = '✓ Queued: ' + name + ' → ' + pts + ' pts'; status.style.color = 'var(--success)';
+    pointsInput.value = ''; memberSel.value = ''; memberSel.focus();
+    renderTroopBatchTable();
+  }
+
+  function removeTroopBatchEntry(key) { delete troopBatchQueue[key]; renderTroopBatchTable(); }
+
+  async function saveTroopBatch() {
+    const status = document.getElementById('troopBatchStatus');
+    status.textContent = ''; status.style.color = '';
+    if (!selectedEvent) { status.textContent = 'No event selected.'; status.style.color = 'var(--danger)'; return; }
+    const keys = Object.keys(troopBatchQueue);
+    if (keys.length === 0) { status.textContent = 'No entries queued.'; status.style.color = 'var(--danger)'; return; }
+    const records = keys.map(k => ({ memberName: troopBatchQueue[k].name, points: troopBatchQueue[k].points, notes: '', extra: '' }));
+    status.textContent = 'Saving ' + records.length + ' entries...'; status.style.color = 'var(--text-muted)';
+    try {
+      const result = await callFunction('batchRecordManualParticipation', [selectedEvent.eventName, records]);
+      if (result && result.success !== false) {
+        status.textContent = 'Saved ' + (result.successCount || records.length) + ' entries!'; status.style.color = 'var(--success)';
+        troopBatchQueue = {}; renderTroopBatchTable();
+        loadTroopParticipation(selectedEvent);
+      } else { status.textContent = result?.message || 'Failed.'; status.style.color = 'var(--danger)'; }
+    } catch (err) { status.textContent = 'Error: ' + err.message; status.style.color = 'var(--danger)'; }
   }
 
   // UTILITIES
