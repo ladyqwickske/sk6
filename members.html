@@ -210,7 +210,9 @@
     <div class="tabs">
       <button class="tab-btn-inner active" onclick="switchTab('troopTab', this)">⚔️ Track Troops</button>
       <button class="tab-btn-inner" onclick="switchTab('heroTab', this)">🦸 Hero Level</button>
+      <button class="tab-btn-inner" onclick="switchTab('heroBatchTab', this)">🦸 Hero Batch</button>
       <button class="tab-btn-inner" onclick="switchTab('carterTab', this)">🏗️ Carter Level</button>
+      <button class="tab-btn-inner" onclick="switchTab('carterBatchTab', this)">🏗️ Carter Batch</button>
       <button class="tab-btn-inner" onclick="switchTab('pointTargetsTab', this)">🎯 Point Targets</button>
       <button class="tab-btn-inner" onclick="switchTab('addMemberTab', this)">➕ Add Member</button>
     </div>
@@ -255,6 +257,46 @@
       </div>
       <button class="btn" onclick="submitCarterLevel()">💾 Save Carter Level</button>
       <div id="carterStatus" class="status"></div>
+    </div>
+
+    <div id="heroBatchTab" class="tab-panel">
+      <h3 style="margin:0 0 10px;color:var(--primary)">Batch Hero Levels</h3>
+      <p style="font-size:0.82em;color:var(--text-muted);margin-bottom:10px;">Select member, enter level, click Add — repeat — then Save All.</p>
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
+        <div><label>Member</label><select id="heroBatchMember"></select></div>
+        <div><label>Hero Level</label><input type="number" id="heroBatchLevel" placeholder="e.g. 350" min="0" onkeypress="if(event.key==='Enter') addToHeroQueue();"></div>
+        <div><label>Date</label><input type="date" id="heroBatchDate"><div class="note">Applies to all</div></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn" onclick="addToHeroQueue()" style="white-space:nowrap;">➕ Add</button></div>
+      </div>
+      <div id="heroBatchQueue" style="max-height:300px;overflow-y:auto;margin:10px 0;border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;">
+        <div style="text-align:center;color:var(--text-muted);padding:12px;">Queue is empty</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn" onclick="submitHeroBatch()">💾 Save All</button>
+        <button class="btn secondary" onclick="clearHeroQueue()">Clear Queue</button>
+        <span id="heroBatchCount" style="font-size:0.82em;color:var(--text-muted);"></span>
+      </div>
+      <div id="heroBatchStatus" class="status"></div>
+    </div>
+
+    <div id="carterBatchTab" class="tab-panel">
+      <h3 style="margin:0 0 10px;color:var(--primary)">Batch Carter (C) Levels</h3>
+      <p style="font-size:0.82em;color:var(--text-muted);margin-bottom:10px;">Select member, enter level, click Add — repeat — then Save All.</p>
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
+        <div><label>Member</label><select id="carterBatchMember"></select></div>
+        <div><label>Carter Level</label><input type="number" id="carterBatchLevel" placeholder="e.g. 150" min="1" max="500" onkeypress="if(event.key==='Enter') addToCarterQueue();"></div>
+        <div><label>Date</label><input type="date" id="carterBatchDate"><div class="note">Applies to all</div></div>
+        <div style="display:flex;align-items:flex-end;"><button class="btn" onclick="addToCarterQueue()" style="white-space:nowrap;">➕ Add</button></div>
+      </div>
+      <div id="carterBatchQueue" style="max-height:300px;overflow-y:auto;margin:10px 0;border:1px solid var(--border);border-radius:8px;padding:8px;background:#fff;">
+        <div style="text-align:center;color:var(--text-muted);padding:12px;">Queue is empty</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn" onclick="submitCarterBatch()">💾 Save All</button>
+        <button class="btn secondary" onclick="clearCarterQueue()">Clear Queue</button>
+        <span id="carterBatchCount" style="font-size:0.82em;color:var(--text-muted);"></span>
+      </div>
+      <div id="carterBatchStatus" class="status"></div>
     </div>
 
     <div id="pointTargetsTab" class="tab-panel">
@@ -328,7 +370,7 @@
 
   function setTodayDefaults() {
     const today = new Date().toISOString().split('T')[0];
-    ['troopDateInput', 'heroDateInput', 'carterDateInput', 'newMemberJoinDate'].forEach(id => {
+    ['troopDateInput', 'heroDateInput', 'carterDateInput', 'heroBatchDate', 'carterBatchDate', 'newMemberJoinDate'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = today;
     });
@@ -464,7 +506,7 @@
     const sorted = [...membersData].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     const options = '<option value="">-- Select member --</option>' +
       sorted.map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('');
-    ['troopMemberSelect', 'heroMemberSelect', 'carterMemberSelect'].forEach(id => {
+    ['troopMemberSelect', 'heroMemberSelect', 'carterMemberSelect', 'heroBatchMember', 'carterBatchMember'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = options;
     });
@@ -905,6 +947,154 @@
       status.textContent = 'Error: ' + err.message;
       status.className = 'status err';
     }
+  }
+
+  // ===========================
+  // HERO BATCH ENTRY (Queue)
+  // ===========================
+  let heroQueue = [];
+  function addToHeroQueue() {
+    const sel = document.getElementById('heroBatchMember');
+    const inp = document.getElementById('heroBatchLevel');
+    const name = sel.value;
+    const lvl = parseInt(inp.value, 10);
+    if (!name) { showToast('Select a member first.', 'err'); return; }
+    if (isNaN(lvl) || lvl < 0) { showToast('Hero level must be 0 or higher.', 'err'); return; }
+    const idx = heroQueue.findIndex(q => q.playerName === name);
+    if (idx !== -1) heroQueue[idx].level = lvl;
+    else heroQueue.push({ playerName: name, level: lvl });
+    inp.value = '';
+    renderHeroQueue();
+    sel.focus();
+  }
+  function removeFromHeroQueue(name) {
+    heroQueue = heroQueue.filter(q => q.playerName !== name);
+    renderHeroQueue();
+  }
+  function clearHeroQueue() {
+    heroQueue = [];
+    renderHeroQueue();
+    document.getElementById('heroBatchStatus').textContent = '';
+  }
+  function renderHeroQueue() {
+    const container = document.getElementById('heroBatchQueue');
+    const countEl = document.getElementById('heroBatchCount');
+    if (heroQueue.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:12px;">Queue is empty</div>';
+      countEl.textContent = '';
+      return;
+    }
+    countEl.textContent = heroQueue.length + ' member(s) queued';
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.88em;">';
+    html += '<tr style="background:#ede5d5;"><th style="text-align:left;padding:6px 8px;">Member</th><th style="text-align:left;padding:6px 8px;">Current</th><th style="text-align:left;padding:6px 8px;">New</th><th style="padding:6px 8px;width:36px;"></th></tr>';
+    heroQueue.forEach(q => {
+      const key = q.playerName.toLowerCase();
+      const cur = heroData[key] && heroData[key].level != null ? heroData[key].level : '—';
+      html += '<tr style="border-bottom:1px solid #eee;">';
+      html += '<td style="padding:4px 8px;">' + escapeHtml(q.playerName) + '</td>';
+      html += '<td style="padding:4px 8px;color:var(--text-muted);">' + cur + '</td>';
+      html += '<td style="padding:4px 8px;font-weight:600;color:var(--primary);">' + q.level + '</td>';
+      html += '<td style="padding:4px 8px;text-align:center;"><button onclick="removeFromHeroQueue(\'' + escapeAttr(q.playerName) + '\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:1.1em;" title="Remove">✕</button></td>';
+      html += '</tr>';
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  }
+  async function submitHeroBatch() {
+    const status = document.getElementById('heroBatchStatus');
+    status.textContent = ''; status.className = 'status';
+    if (heroQueue.length === 0) { status.textContent = 'Queue is empty — add members first.'; status.className = 'status err'; return; }
+    const dateVal = document.getElementById('heroBatchDate').value;
+    const customTimestamp = dateVal ? dateVal + 'T12:00:00Z' : null;
+    status.textContent = 'Saving ' + heroQueue.length + ' hero level(s)...';
+    try {
+      const records = heroQueue.map(q => ({ playerName: q.playerName, level: q.level }));
+      const result = await callFunction('batchRecordHeroLevel', [records, customTimestamp]);
+      if (result && result.success) {
+        const saved = result.successCount || records.length;
+        status.textContent = saved + ' hero level(s) saved.' + (result.errors && result.errors.length ? ' Errors: ' + result.errors.join('; ') : '');
+        status.className = 'status ok';
+        const ts = dateVal || new Date().toISOString().split('T')[0];
+        records.forEach(r => { heroData[r.playerName.toLowerCase()] = { level: r.level, timestamp: ts }; });
+        renderTable();
+        heroQueue = [];
+        renderHeroQueue();
+      } else { status.textContent = result?.message || 'Failed to save.'; status.className = 'status err'; }
+    } catch (err) { status.textContent = 'Error: ' + err.message; status.className = 'status err'; }
+  }
+
+  // ===========================
+  // CARTER BATCH ENTRY (Queue)
+  // ===========================
+  let carterQueue = [];
+  function addToCarterQueue() {
+    const sel = document.getElementById('carterBatchMember');
+    const inp = document.getElementById('carterBatchLevel');
+    const name = sel.value;
+    const lvl = parseInt(inp.value, 10);
+    if (!name) { showToast('Select a member first.', 'err'); return; }
+    if (isNaN(lvl) || lvl < 1 || lvl > 500) { showToast('Carter level must be 1–500.', 'err'); return; }
+    const idx = carterQueue.findIndex(q => q.playerName === name);
+    if (idx !== -1) carterQueue[idx].level = lvl;
+    else carterQueue.push({ playerName: name, level: lvl });
+    inp.value = '';
+    renderCarterQueue();
+    sel.focus();
+  }
+  function removeFromCarterQueue(name) {
+    carterQueue = carterQueue.filter(q => q.playerName !== name);
+    renderCarterQueue();
+  }
+  function clearCarterQueue() {
+    carterQueue = [];
+    renderCarterQueue();
+    document.getElementById('carterBatchStatus').textContent = '';
+  }
+  function renderCarterQueue() {
+    const container = document.getElementById('carterBatchQueue');
+    const countEl = document.getElementById('carterBatchCount');
+    if (carterQueue.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:12px;">Queue is empty</div>';
+      countEl.textContent = '';
+      return;
+    }
+    countEl.textContent = carterQueue.length + ' member(s) queued';
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:0.88em;">';
+    html += '<tr style="background:#ede5d5;"><th style="text-align:left;padding:6px 8px;">Member</th><th style="text-align:left;padding:6px 8px;">Current</th><th style="text-align:left;padding:6px 8px;">New</th><th style="padding:6px 8px;width:36px;"></th></tr>';
+    carterQueue.forEach(q => {
+      const key = q.playerName.toLowerCase();
+      const troops = troopData[key] || {};
+      const cur = troops.C != null ? troops.C : '—';
+      html += '<tr style="border-bottom:1px solid #eee;">';
+      html += '<td style="padding:4px 8px;">' + escapeHtml(q.playerName) + '</td>';
+      html += '<td style="padding:4px 8px;color:var(--text-muted);">' + cur + '</td>';
+      html += '<td style="padding:4px 8px;font-weight:600;color:var(--primary);">' + q.level + '</td>';
+      html += '<td style="padding:4px 8px;text-align:center;"><button onclick="removeFromCarterQueue(\'' + escapeAttr(q.playerName) + '\')" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:1.1em;" title="Remove">✕</button></td>';
+      html += '</tr>';
+    });
+    html += '</table>';
+    container.innerHTML = html;
+  }
+  async function submitCarterBatch() {
+    const status = document.getElementById('carterBatchStatus');
+    status.textContent = ''; status.className = 'status';
+    if (carterQueue.length === 0) { status.textContent = 'Queue is empty — add members first.'; status.className = 'status err'; return; }
+    const dateVal = document.getElementById('carterBatchDate').value;
+    const customTimestamp = dateVal ? dateVal + 'T12:00:00Z' : null;
+    status.textContent = 'Saving ' + carterQueue.length + ' Carter level(s)...';
+    try {
+      const records = carterQueue.map(q => ({ playerName: q.playerName, level: q.level }));
+      const result = await callFunction('batchRecordCarterLevel', [records, customTimestamp]);
+      if (result && result.success) {
+        const saved = result.successCount || records.length;
+        status.textContent = saved + ' Carter level(s) saved.' + (result.errors && result.errors.length ? ' Errors: ' + result.errors.join('; ') : '');
+        status.className = 'status ok';
+        records.forEach(r => { const key = r.playerName.toLowerCase(); if (!troopData[key]) troopData[key] = {}; troopData[key].C = r.level; });
+        renderTable();
+        carterQueue = [];
+        renderCarterQueue();
+      } else { status.textContent = result?.message || 'Failed to save.'; status.className = 'status err'; }
+    } catch (err) { status.textContent = 'Error: ' + err.message; status.className = 'status err'; }
   }
 
   // UTILITIES
