@@ -429,8 +429,15 @@
     }
 
     const HIGHLIGHT_COUNT = 5;
+    const NEW_MEMBER_DAYS = 5; // exclude members who joined < 5 days ago from bottom list
+    const today = new Date();
     const top = sorted.slice(0, HIGHLIGHT_COUNT);
-    const bottom = sorted.length > HIGHLIGHT_COUNT ? sorted.slice(-HIGHLIGHT_COUNT).reverse() : [];
+    const seasoned = sorted.filter(m => {
+      if (!m.joinDate) return true; // no join date = include
+      const jd = new Date(m.joinDate + 'T00:00:00Z');
+      return (today - jd) / 86400000 >= NEW_MEMBER_DAYS;
+    });
+    const bottom = seasoned.length > HIGHLIGHT_COUNT ? seasoned.slice(-HIGHLIGHT_COUNT).reverse() : [];
 
     // ── Top Performers ──
     let html = '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;">';
