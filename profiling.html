@@ -255,6 +255,8 @@
   let currentUser = null;
 
   document.addEventListener('DOMContentLoaded', () => {
+    // Set initial history state for rankings tab
+    history.replaceState({ tab: 'rankings' }, '', '#rankings');
     checkLoginState();
     if (isLoggedIn) {
       document.getElementById('loginGate').style.display = 'none';
@@ -360,12 +362,23 @@
     });
   }
 
-  // ─── Tab switching ───
-  function switchSubTab(tab) {
+  // ─── Tab switching (with browser history so Back button works) ───
+  function switchSubTab(tab, pushHistory) {
     document.querySelectorAll('.sub-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
     document.getElementById('tabRankings').style.display = tab === 'rankings' ? '' : 'none';
     document.getElementById('tabIndividual').style.display = tab === 'individual' ? '' : 'none';
+    if (pushHistory !== false) {
+      history.pushState({ tab: tab }, '', '#' + tab);
+    }
   }
+
+  window.addEventListener('popstate', function(e) {
+    if (e.state && e.state.tab) {
+      switchSubTab(e.state.tab, false);
+    } else {
+      switchSubTab('rankings', false);
+    }
+  });
 
   // ─── Score color ───
   function scoreColor(score) {
