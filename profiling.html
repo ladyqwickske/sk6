@@ -544,7 +544,10 @@
     }
     // Crypts
     if (b.crypts) {
-      cards.push(card('🏚️ Crypts', formatNumber(b.crypts.points) + ' pts', 'Since join date'));
+      const cSub = b.crypts.periods > 0
+        ? b.crypts.score + '% avg target across ' + b.crypts.periods + ' period' + (b.crypts.periods !== 1 ? 's' : '')
+        : 'No completed periods';
+      cards.push(card('🏚️ Crypts', formatNumber(b.crypts.points) + ' pts', cSub));
     }
     // Ragnarok
     if (b.ragnarok) {
@@ -581,7 +584,7 @@
     const rows = [
       metricRow('Tower Registration', b.tower, W.tower, b.tower ? b.tower.participated + '/' + b.tower.total + ' events' : '—'),
       metricRow('Tinman Performance', b.tinman, W.tinman, b.tinman ? b.tinman.participated + '/' + b.tinman.total + ' events' : '—'),
-      metricRow('Crypt Contribution', b.crypts, W.crypts, b.crypts ? formatNumber(b.crypts.points) + ' pts' : '—'),
+      metricRow('Crypt Contribution', b.crypts, W.crypts, b.crypts ? formatNumber(b.crypts.points) + ' pts (' + (b.crypts.periods || 0) + ' period' + ((b.crypts.periods || 0) !== 1 ? 's' : '') + ', ' + (b.crypts.score ?? '—') + '% avg)' : '—'),
       metricRow('Ragnarok', b.ragnarok, W.ragnarok, b.ragnarok ? b.ragnarok.participated + '/' + b.ragnarok.total + ' events' : '—'),
       metricRow('Ragnarok Points', b.ragnarokPts, W.ragnarokPts, b.ragnarokPts ? b.ragnarokPts.participated + '/' + b.ragnarokPts.total + ' events' : '—'),
       metricRow('Essence', b.essence, W.essence, b.essence ? formatNumber(b.essence.total) + ' total (' + formatNumber(b.essence.dailyAvg) + '/day)' : '—'),
