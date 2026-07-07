@@ -51,10 +51,27 @@
     .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 8px; flex-direction: column; gap: 4px; }
     .hamburger span { display: block; width: 22px; height: 2px; background: var(--primary); border-radius: 2px; }
 
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px; z-index: 3000;
+      background: #fff; color: var(--text); padding: 12px 20px;
+      border-radius: 8px; font-size: 0.9em; display: none;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+
+    /* Button */
+    .btn {
+      background: var(--primary); color: #fff; border: none; border-radius: 8px;
+      padding: 8px 16px; cursor: pointer; font-weight: 600; font-size: 0.9em;
+    }
+    .btn:hover { background: var(--primary-hover); }
+
     /* Container */
     .container { max-width: 1000px; margin: 0 auto; background: var(--bg-card); border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px 16px; }
     h1 { color: var(--primary); text-align: center; margin-bottom: 4px; font-size: 1.8em; }
-    .site-logo { width: 48px; height: 48px; vertical-align: middle; margin-right: 8px; }
+    .site-logo { width: 64px; height: 64px; display: block; margin: 0 auto 8px auto; }
     .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 16px; font-size: 0.9em; }
     h2 { font-size: 1.1em; font-weight: 600; color: var(--primary); margin: 20px 0 10px 0; }
 
@@ -146,78 +163,9 @@
 </head>
 <body>
 
-<script>
-  // --- Auth ---
-  const AUTH_KEY = 'sk6_portal_google_auth';
-  const AUTH_EMAIL_KEY = 'sk6_portal_google_email';
-  let isLoggedIn = false;
-  let currentUser = null;
-
-  function checkLoginState() {
-    try {
-      const authed = localStorage.getItem(AUTH_KEY) === '1';
-      const email = localStorage.getItem(AUTH_EMAIL_KEY);
-      if (authed && email) { isLoggedIn = true; currentUser = { email }; }
-    } catch (e) {}
-    updateLoginUI();
-  }
-  function handleLogin() {
-    if (!document.getElementById('gsi-script')) {
-      const s = document.createElement('script'); s.id = 'gsi-script';
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.onload = () => initGoogleLogin(); document.head.appendChild(s);
-    } else { initGoogleLogin(); }
-  }
-  function initGoogleLogin() {
-    google.accounts.id.initialize({ client_id: SITE_CONFIG.googleClientId, callback: handleGoogleCallback });
-    google.accounts.id.prompt();
-  }
-  async function handleGoogleCallback(response) {
-    try {
-      const cfWorkerUrl = window.CLOUDFLARE_WORKER_URL || window.GAS_WEB_APP_URL;
-      const tokenRes = await fetch(cfWorkerUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: response.credential }) });
-      const tokenData = await tokenRes.json();
-      if (!tokenData.success || !tokenData.email) { showToast('Login failed', 'error'); return; }
-      const email = tokenData.email;
-      const res = await fetch(window.GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-      const data = await res.json();
-      if (data.success && data.allowed) {
-        isLoggedIn = true; currentUser = { email };
-        localStorage.setItem(AUTH_KEY, '1'); localStorage.setItem(AUTH_EMAIL_KEY, email);
-        updateLoginUI(); showToast('Logged in as ' + email, 'success');
-      } else { showToast('Access denied for ' + email, 'error'); }
-    } catch (err) { showToast('Login error: ' + err.message, 'error'); }
-  }
-  function handleLogout() {
-    isLoggedIn = false; currentUser = null;
-    try { localStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_EMAIL_KEY); } catch (e) {}
-    updateLoginUI(); showToast('Logged out', 'success');
-  }
-  function updateLoginUI() {
-    const emailEl = document.getElementById('userEmail');
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (isLoggedIn && currentUser) {
-      emailEl.textContent = currentUser.email; emailEl.style.display = 'inline';
-      loginBtn.style.display = 'none'; logoutBtn.style.display = 'inline';
-    } else {
-      emailEl.style.display = 'none'; loginBtn.style.display = 'inline'; logoutBtn.style.display = 'none';
-    }
-  }
-  function showToast(msg, type) {
-    let t = document.getElementById('toast');
-    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:3000;background:#fff;color:var(--text);padding:12px 20px;border-radius:8px;font-size:0.9em;display:none;box-shadow:0 2px 12px rgba(0,0,0,0.12);'; document.body.appendChild(t); }
-    t.textContent = msg;
-    t.style.borderLeft = type === 'success' ? '4px solid #27ae60' : type === 'error' ? '4px solid #c0392b' : '4px solid #c8a415';
-    t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 3000);
-  }
-  window.addEventListener('DOMContentLoaded', () => checkLoginState());
-</script>
-
-<nav class="tab-nav" id="tabNav">
+<nav class="tab-nav">
   <button class="hamburger" id="hamburgerBtn" onclick="document.getElementById('navLinks').classList.toggle('open')"><span></span><span></span><span></span></button>
-  <div class="login-bar" id="loginBar">
+  <div class="login-bar">
     <span class="user-email" id="userEmail" style="display:none"></span>
     <button id="loginBtn" onclick="handleLogin()">🔑 Login</button>
     <button id="logoutBtn" class="logout-btn" style="display:none" onclick="handleLogout()">Logout</button>
@@ -233,8 +181,15 @@
   </div>
 </nav>
 
-<div class="container">
-  <h1><img src="ccc-sk6.png" alt="" class="site-logo"> Member Profiling</h1>
+<div class="login-gate" id="loginGate" style="max-width:500px;margin:80px auto;text-align:center;background:var(--bg-card);border-radius:16px;padding:40px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+  <h2 style="color:var(--primary);margin-bottom:12px;">🔒 Login Required</h2>
+  <p style="color:var(--text-muted);margin-bottom:20px;">You need to be logged in to view the Profiling page.</p>
+  <button class="btn" onclick="handleLogin()" style="padding:12px 32px;font-size:1em;">🔑 Login</button>
+</div>
+
+<div class="container" id="mainContent" style="display:none">
+  <img src="ccc-sk6.png" alt="cCc Champions SK6" class="site-logo">
+  <h1>Member Profiling</h1>
   <p class="subtitle">Performance scoring based on Tower, Tinman, Crypts, Ragnarok, Essence, Carter & Hero growth</p>
 
   <!-- Sub-tabs -->
@@ -291,12 +246,74 @@
   </div>
 </div>
 
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
 <script>
   let profilingData = null; // cached bundle
+  let isLoggedIn = false;
+  let currentUser = null;
 
   document.addEventListener('DOMContentLoaded', () => {
-    loadProfilingData();
+    checkLoginState();
+    if (isLoggedIn) {
+      document.getElementById('loginGate').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+      loadProfilingData();
+    }
   });
+
+  // AUTH
+  function checkLoginState() {
+    const stored = localStorage.getItem('sk6_auth');
+    if (stored) {
+      try {
+        const auth = JSON.parse(stored);
+        if (auth.email && auth.allowed) { isLoggedIn = true; currentUser = auth; updateLoginUI(); }
+      } catch (e) {}
+    }
+  }
+  function handleLogin() {
+    if (!document.getElementById('gsi-script')) {
+      const s = document.createElement('script'); s.id = 'gsi-script';
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.onload = () => { google.accounts.id.initialize({ client_id: SITE_CONFIG.googleClientId, callback: handleGoogleCallback }); google.accounts.id.prompt(); };
+      document.head.appendChild(s);
+    } else { google.accounts.id.prompt(); }
+  }
+  async function handleGoogleCallback(response) {
+    try {
+      const res = await fetch(window.GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: response.credential }) });
+      const data = await res.json();
+      if (data.success && data.email) {
+        const vRes = await fetch(window.GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'api', fn: 'verifyGoogleLogin', args: [{ email: data.email }] }) });
+        const vData = await vRes.json();
+        const auth = vData.data || vData;
+        if (auth.success && auth.allowed) {
+          isLoggedIn = true; currentUser = { email: data.email, allowed: true };
+          localStorage.setItem('sk6_auth', JSON.stringify(currentUser));
+          updateLoginUI(); showToast('Logged in', 'success');
+        } else { showToast('Access denied', 'error'); }
+      }
+    } catch (err) { showToast('Login error', 'error'); }
+  }
+  function handleLogout() { isLoggedIn = false; currentUser = null; localStorage.removeItem('sk6_auth'); window.location.href = 'dashboard.html'; }
+  function updateLoginUI() {
+    document.getElementById('userEmail').textContent = isLoggedIn ? currentUser.email : '';
+    document.getElementById('userEmail').style.display = isLoggedIn ? 'inline' : 'none';
+    document.getElementById('loginBtn').style.display = isLoggedIn ? 'none' : 'inline';
+    document.getElementById('logoutBtn').style.display = isLoggedIn ? 'inline' : 'none';
+    document.getElementById('loginGate').style.display = isLoggedIn ? 'none' : 'block';
+    document.getElementById('mainContent').style.display = isLoggedIn ? 'block' : 'none';
+    if (isLoggedIn && !profilingData) loadProfilingData();
+  }
+  function showToast(message, type) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast ' + (type || '');
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
 
   async function loadProfilingData() {
     const loading = document.getElementById('rankingsLoading');
@@ -378,15 +395,11 @@
       ? '<span style="font-size:0.75em;color:var(--text-muted);font-weight:400;display:block;margin-top:4px;">Events tracked: Tower (' + profilingData.eventCounts.tower + ') · Tinman (' + profilingData.eventCounts.tinman + ') · Ragnarok (' + (profilingData.eventCounts.ragnarok || 0) + ') · Rag Pts (' + (profilingData.eventCounts.ragnarokPts || 0) + ')</span>'
       : '';
 
-    let html = '<div class="ranking-section-title">🏆 All Members Ranked <span style="font-size:0.8em;color:var(--text-muted);font-weight:400;">(' + sorted.length + ' members)</span>' + metaNote + '</div>' + eventNote;
-
-    sorted.forEach((m, i) => {
-      const rank = i + 1;
+    // Build a ranking card HTML helper
+    function rankingCardHtml(m, rank) {
       const rankClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
       const medal = rank <= 3 ? ['🥇','🥈','🥉'][rank - 1] + ' ' : '';
       const b = m.breakdown || {};
-
-      // Mini breakdown bars (width proportional to score, capped at 50px)
       const barHtml = [
         { score: b.tower?.score, color: '#8e44ad', title: 'Tower' },
         { score: b.tinman?.score, color: '#2980b9', title: 'Tinman' },
@@ -400,13 +413,11 @@
         const w = bar.score !== null && bar.score !== undefined ? Math.max(2, bar.score * 0.5) : 0;
         return w > 0 ? '<div class="ranking-bar" style="background:' + bar.color + '44;width:' + w + 'px;" title="' + bar.title + ': ' + (bar.score ?? '—') + '"></div>' : '';
       }).join('');
-
       const metaParts = [m.rating];
       if (m.joinDate) metaParts.push('Joined ' + m.joinDate);
       if (b.tower?.total > 0) metaParts.push('Tower ' + b.tower.participated + '/' + b.tower.total);
       if (b.tinman?.total > 0) metaParts.push('Tinman ' + b.tinman.participated + '/' + b.tinman.total);
-
-      html += '<div class="ranking-card">'
+      return '<div class="ranking-card">'
         + '<div class="ranking-rank ' + rankClass + '">#' + rank + '</div>'
         + '<div class="ranking-info">'
         + '<div class="ranking-name" onclick="jumpToProfile(\'' + escapeAttr(m.name) + '\')">' + medal + escapeHtml(m.name) + '</div>'
@@ -415,7 +426,36 @@
         + '</div>'
         + '<div class="ranking-score-pill" style="background:' + scoreBg(m.overallScore) + ';color:' + scoreColor(m.overallScore) + ';">' + m.overallScore + '</div>'
         + '</div>';
-    });
+    }
+
+    const HIGHLIGHT_COUNT = 5;
+    const top = sorted.slice(0, HIGHLIGHT_COUNT);
+    const bottom = sorted.length > HIGHLIGHT_COUNT ? sorted.slice(-HIGHLIGHT_COUNT).reverse() : [];
+
+    // ── Top Performers ──
+    let html = '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;">';
+    html += '<div style="flex:1;min-width:280px;">'
+      + '<div class="ranking-section-title">🏆 Top Performers' + metaNote + '</div>' + eventNote;
+    top.forEach((m, i) => { html += rankingCardHtml(m, i + 1); });
+    html += '</div>';
+
+    // ── Needs Attention ──
+    if (bottom.length > 0) {
+      html += '<div style="flex:1;min-width:280px;">'
+        + '<div class="ranking-section-title">⚠️ Needs Attention</div>';
+      bottom.forEach((m) => {
+        const globalRank = sorted.indexOf(m) + 1;
+        html += rankingCardHtml(m, globalRank);
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // ── Full Rankings ──
+    html += '<details style="margin-top:8px;"><summary style="cursor:pointer;font-size:0.95em;font-weight:600;color:var(--primary);padding:8px 0;">📋 Full Rankings (' + sorted.length + ' members)</summary>'
+      + '<div style="margin-top:8px;">';
+    sorted.forEach((m, i) => { html += rankingCardHtml(m, i + 1); });
+    html += '</div></details>';
 
     document.getElementById('rankingsContent').innerHTML = html;
   }
