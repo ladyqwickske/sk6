@@ -560,7 +560,11 @@
   function sortParticipation(field) {
     if (partSortField === field) partSortAsc = !partSortAsc;
     else { partSortField = field; partSortAsc = true; }
-    renderParticipation(lastPartData, lastPartHeaders);
+    if (currentPartBodyId === 'troopParticipationBody') {
+      renderTroopParticipation(lastPartData, lastPartHeaders);
+    } else {
+      renderParticipation(lastPartData, lastPartHeaders);
+    }
   }
   function renderParticipation(data, headers) {
     let sorted = [...data];
