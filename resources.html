@@ -441,9 +441,9 @@
         <thead>
           <tr>
             <th onclick="sortSummary('dragon','member')">Member</th>
+            <th onclick="sortSummary('dragon','balance')">Balance (Owed)</th>
             <th onclick="sortSummary('dragon','contributed')">Total Contributed</th>
             <th onclick="sortSummary('dragon','paidOut')">Total Paid Out</th>
-            <th onclick="sortSummary('dragon','balance')">Balance (Owed)</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -1254,9 +1254,9 @@
       }
       return `<tr style="${rowStyle}">
         <td><strong>${escapeHtml(e.member)}</strong>${newMemberBadge(e.member)}</td>
+        <td style="font-weight:700;color:${e.balance > 0 ? 'var(--danger)' : 'var(--success)'}">${formatNumber(e.balance)}</td>
         <td class="amount-positive">+${formatNumber(e.contributed)}</td>
         <td class="${e.paidOut > 0 ? 'amount-negative' : ''}">${e.paidOut > 0 ? '-' : ''}${formatNumber(e.paidOut)}</td>
-        <td style="font-weight:700;color:${e.balance > 0 ? 'var(--danger)' : 'var(--success)'}">${formatNumber(e.balance)}</td>
         <td>${statusHtml}</td>
       </tr>`;
     }).join('');
